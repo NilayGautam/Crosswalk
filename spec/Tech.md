@@ -135,7 +135,11 @@ Providers supported first: Anthropic, OpenAI, and TypeSafe.
 - `crosswalk link` ties the current folder to one project, and remembers the choice in a small file in that folder.
 - `crosswalk` on its own scans the folder and sends the schema cards to the linked project, where they appear on the open canvas without a refresh.
 - `crosswalk --show` prints exactly what would be sent and sends nothing.
-- Folders that are links are skipped unless `--follow-links` is given, so a link into a protected data folder is never read by accident.
+- Files and folders that are links are skipped unless `--follow-links` is given, so a link into a protected data folder is never read by accident.
+- Hidden folders and the tool folders `node_modules`, `__pycache__`, `site-packages`, and `crosswalk_out` are never read.
+- Nothing is skipped silently: the summary names every skipped folder and counts the skipped links.
+- A table the server would refuse, for example one with more than 5,000 columns, is skipped and named, and the rest is still sent.
+  The cards are sent in as many requests as the server's limits need.
 - Profiles are computed from the first 100,000 rows of a file, and the row count is always the real one.
 - The server address is a setting, and in v1 it is `localhost`.
 

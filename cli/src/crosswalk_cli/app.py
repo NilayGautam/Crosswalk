@@ -13,8 +13,9 @@ from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
+from rich.text import Text
 
-from crosswalk_cli import __version__, store
+from crosswalk_cli import __version__, limits, store
 from crosswalk_cli.api import ApiError, Client, NotSignedIn, Project
 from crosswalk_cli.datasets import DatasetCard, ScanResult, Unreadable, find_files, scan
 
@@ -24,8 +25,10 @@ app = typer.Typer(
     no_args_is_help=False,
     rich_markup_mode=None,
 )
-console = Console(highlight=False)
-errors = Console(stderr=True, highlight=False)
+# Names from the user's files and account are printed exactly as they are, so
+# nothing that is printed is read as Rich markup or as an emoji code.
+console = Console(highlight=False, markup=False, emoji=False)
+errors = Console(stderr=True, highlight=False, markup=False, emoji=False)
 
 ServerOption = Annotated[
     str | None,
@@ -37,7 +40,7 @@ def main() -> None:
     try:
         app()
     except ApiError as error:
-        errors.print(f"[red]{error}[/red]", markup=True)
+        errors.print(str(error), style="red")
         raise SystemExit(1) from None
     except KeyboardInterrupt:
         errors.print("Stopped.")
@@ -69,7 +72,8 @@ def root(
         bool, typer.Option("--show", help="Print exactly what would be sent, then stop.")
     ] = False,
     follow_links: Annotated[
-        bool, typer.Option("--follow-links", help="Also look inside folders that are links.")
+        bool,
+        typer.Option("--follow-links", help="Also read files and folders that are links."),
     ] = False,
     version: Annotated[
         bool,
@@ -77,8 +81,45 @@ def root(
     ] = False,
 ) -> None:
     """Scan this folder and send its datasets to the linked project."""
-    if context.invoked_subcommand is None:
-        send(server=server, yes=yes, show=show, follow_links=follow_links)
+    if context.invoked_subcommand is not None:
+        return
+    folder = Path.cwd()
+    result = _scan_folder(folder, follow_links)
+    payload = [card.to_json() for card in result.cards]
+    if show:
+        # Printed plainly, so it can be piped to a file and read in full.
+        print(json.dumps({"datasets": payload}, indent=2, ensure_ascii=False))
+        return
+
+    _print_summary(result)
+    if not result.cards:
+        console.print("There is nothing to send.")
+        raise typer.Exit(1 if result.unreadable else 0)
+
+    client = _client(server)
+    current = store.load_link(folder, client.server)
+    target = client.project(current.project_id) if current is not None else None
+    if current is not None and target is None:
+        console.print(f"The project this folder was linked to, {current.project_name}, is gone.")
+    if target is None:
+        target = _choose_project(client, None)
+        _save_link(client, target)
+
+    console.print()
+    console.print(Text.assemble("This will be sent to the project ", (target.name, "bold"), ":"))
+    console.print("  - file names, sheet names, and row counts")
+    console.print("  - column names")
+    console.print("  - for each column: its type, how often it is empty, how many")
+    console.print("    different values it has, and what its values look like")
+    console.print("No cell values are sent. Run `crosswalk --show` to read every byte first.")
+    console.print()
+    if not yes and not Confirm.ask("Send?", default=True, console=console):
+        console.print("Nothing was sent.")
+        raise typer.Exit(1)
+
+    outcome = client.send_datasets(target.id, payload)
+    console.print(f"Sent. {_count(outcome['added'], 'new card')}, {outcome['updated']} updated.")
+    console.print(f"Open {client.web_url()}/project/?id={target.id}")
 
 
 @app.command()
@@ -95,7 +136,7 @@ def login(
     console.print()
     console.print("To link this computer, confirm this code in your browser:")
     console.print()
-    console.print(f"    [bold]{_spaced(code.user_code)}[/bold]", markup=True)
+    console.print(f"    {_spaced(code.user_code)}", style="bold")
     console.print()
     console.print(f"Open {code.verification_uri_complete}")
     if not no_browser:
@@ -155,69 +196,20 @@ def status(server: ServerOption = None) -> None:
     console.print(f"Project: {current.project_name}")
 
 
-@app.command()
-def send(
-    server: ServerOption = None,
-    yes: Annotated[
-        bool, typer.Option("--yes", "-y", help="Send without asking for confirmation.")
-    ] = False,
-    show: Annotated[
-        bool, typer.Option("--show", help="Print exactly what would be sent, then stop.")
-    ] = False,
-    follow_links: Annotated[
-        bool, typer.Option("--follow-links", help="Also look inside folders that are links.")
-    ] = False,
-) -> None:
-    """Scan this folder and send its datasets to the linked project."""
-    folder = Path.cwd()
-    result = _scan_folder(folder, follow_links)
-    payload = [card.to_json() for card in result.cards]
-    if show:
-        # Printed plainly, so it can be piped to a file and read in full.
-        print(json.dumps({"datasets": payload}, indent=2, ensure_ascii=False))
-        return
-
-    _print_summary(result)
-    if not result.cards:
-        console.print("There is nothing to send.")
-        raise typer.Exit(1 if result.unreadable else 0)
-
-    client = _client(server)
-    current = store.load_link(folder, client.server)
-    target = client.project(current.project_id) if current is not None else None
-    if current is not None and target is None:
-        console.print(f"The project this folder was linked to, {current.project_name}, is gone.")
-    if target is None:
-        target = _choose_project(client, None)
-        _save_link(client, target)
-
-    console.print()
-    console.print(f"This will be sent to the project [bold]{target.name}[/bold]:", markup=True)
-    console.print("  - file names, sheet names, and row counts")
-    console.print("  - column names")
-    console.print("  - for each column: its type, how often it is empty, how many")
-    console.print("    different values it has, and what its values look like")
-    console.print("No cell values are sent. Run `crosswalk --show` to read every byte first.")
-    console.print()
-    if not yes and not Confirm.ask("Send?", default=True, console=console):
-        console.print("Nothing was sent.")
-        raise typer.Exit(1)
-
-    outcome = client.send_datasets(target.id, payload)
-    console.print(f"Sent. {_count(outcome['added'], 'new card')}, {outcome['updated']} updated.")
-    console.print(f"Open {client.web_url()}/project/?id={target.id}")
-
-
 def _scan_folder(folder: Path, follow_links: bool) -> ScanResult:
     found = find_files(folder, follow_links=follow_links)
-    result = ScanResult(linked_folders=found.linked_folders)
+    result = ScanResult(
+        skipped_folders=found.skipped_folders,
+        linked_folders=found.linked_folders,
+        linked_files=found.linked_files,
+    )
     if not found.files:
         return result
     progress = Progress(
         TextColumn("Reading"),
         BarColumn(),
         MofNCompleteColumn(),
-        TextColumn("{task.description}"),
+        TextColumn("{task.description}", markup=False),
         console=errors,
         transient=True,
     )
@@ -227,8 +219,13 @@ def _scan_folder(folder: Path, follow_links: bool) -> ScanResult:
             progress.update(task, advance=1, description=file.name)
             if isinstance(outcome, Unreadable):
                 result.unreadable.append(outcome)
-            else:
-                result.cards.extend(outcome)
+                continue
+            for card in outcome:
+                problem = limits.problem(card.to_json())
+                if problem is None:
+                    result.cards.append(card)
+                else:
+                    result.unreadable.append(Unreadable(_label(card), problem))
     return result
 
 
@@ -239,18 +236,29 @@ def _print_summary(result: ScanResult) -> None:
         table.add_column("Rows", justify="right")
         table.add_column("Columns", justify="right")
         for card in result.cards:
-            table.add_row(_label(card), f"{card.row_count:,}", f"{len(card.columns):,}")
+            table.add_row(Text(_label(card)), f"{card.row_count:,}", f"{len(card.columns):,}")
         console.print(table)
     else:
         console.print("No datasets were found in this folder.")
         console.print("Crosswalk reads CSV, TSV, XLSX, XLS, Parquet, and Stata .dta files.")
     for item in result.unreadable:
-        errors.print(f"Skipped {item.path}: {item.reason}", markup=False)
-    if result.linked_folders:
+        errors.print(f"Skipped {item.path}: {item.reason}")
+    if result.skipped_folders:
         console.print(
-            f"Skipped {_count(result.linked_folders, 'linked folder')}. "
-            "Use --follow-links to look inside."
+            "This folder holds more than datasets. "
+            f"Skipped {_count(len(result.skipped_folders), 'folder')}: "
+            f"{', '.join(result.skipped_folders)}"
         )
+    linked = [
+        _count(number, noun)
+        for number, noun in (
+            (result.linked_folders, "linked folder"),
+            (result.linked_files, "linked file"),
+        )
+        if number
+    ]
+    if linked:
+        console.print(f"Skipped {' and '.join(linked)}. Use --follow-links to read them.")
 
 
 def _label(card: DatasetCard) -> str:
@@ -280,7 +288,7 @@ def _choose_project(client: Client, project_id: str | None) -> Project:
         return client.create_project(_ask_name())
     console.print("Which project should this folder send its datasets to?")
     for number, item in enumerate(projects, start=1):
-        console.print(f"  {number}. {item.name}", markup=False)
+        console.print(f"  {number}. {item.name}")
     console.print(f"  {len(projects) + 1}. Create a new project")
     choice = IntPrompt.ask(
         "Number",
@@ -303,4 +311,4 @@ def _ask_name() -> str:
 def _save_link(client: Client, project: Project) -> None:
     folder = Path.cwd()
     store.save_link(folder, store.Link(client.server, project.id, project.name))
-    console.print(f"This folder is linked to {project.name}.", markup=False)
+    console.print(f"This folder is linked to {project.name}.")

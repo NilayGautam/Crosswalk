@@ -45,10 +45,15 @@ Useful commands:
 | `crosswalk link`           | Choose which project this folder sends to.                    |
 | `crosswalk status`         | Show the account and the project this folder is linked to.    |
 | `crosswalk logout`         | Unlink this computer.                                         |
-| `crosswalk --follow-links` | Also look inside folders that are links.                      |
+| `crosswalk --follow-links` | Also read files and folders that are links.                   |
 
 The tool reads CSV, TSV, XLSX, XLS, Parquet, and Stata `.dta` files.
 It never sends a cell value.
+
+Files and folders that are links are not read unless you pass `--follow-links`.
+Hidden folders and the tool folders `node_modules`, `__pycache__`, `site-packages`, and `crosswalk_out` are never read.
+The summary names every folder it skipped and counts the links, so you can see when a folder holds more than datasets.
+A file the server would refuse, for example one with more than 5,000 columns, is skipped and named, and the rest is still sent.
 
 ## Develop
 

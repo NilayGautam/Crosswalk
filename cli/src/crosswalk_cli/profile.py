@@ -8,6 +8,7 @@ a profile come from this file, never from the data.
 from __future__ import annotations
 
 import datetime as dt
+import unicodedata
 from collections import Counter
 from dataclasses import dataclass
 
@@ -208,11 +209,21 @@ def _text_shape(present: pl.Series) -> str:
 
 
 def mask(value: str) -> str:
-    """Replace every letter with A and every digit with 9, keeping punctuation."""
-    return "".join(
-        "9" if character.isdigit() else "A" if character.isalpha() else character
-        for character in value
-    )
+    """Replace every digit with 9 and every letter with A, keeping punctuation.
+
+    Only punctuation, plain symbols, and spaces are kept as they are. Anything
+    else, such as a vowel sign or a pictograph, is part of what a cell says.
+    """
+    return "".join(_mask_character(character) for character in value)
+
+
+def _mask_character(character: str) -> str:
+    category = unicodedata.category(character)
+    if category.startswith("N"):
+        return "9"
+    if category.startswith("P") or category in ("Sm", "Sc", "Sk", "Zs"):
+        return character
+    return "A"
 
 
 def _common_pattern(present: pl.Series) -> str | None:

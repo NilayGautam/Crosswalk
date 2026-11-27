@@ -12,6 +12,7 @@ from dataclasses import dataclass
 import httpx
 
 from crosswalk_cli import __version__
+from crosswalk_cli.limits import MAX_DATASETS_PER_REQUEST, MAX_REQUEST_BYTES, card_bytes
 
 CLIENT_ID = "crosswalk-cli"
 DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
@@ -152,7 +153,30 @@ class Client:
         return _project(self._json("POST", "/api/projects", {"name": name})["project"])
 
     def send_datasets(self, project_id: str, cards: list[dict]) -> dict:
-        return self._json("PUT", f"/api/projects/{project_id}/datasets", {"datasets": cards})
+        """Send the cards in as many requests as the server's limits need."""
+        total = {"added": 0, "updated": 0}
+        for batch in _batches(cards):
+            outcome = self._json("PUT", f"/api/projects/{project_id}/datasets", {"datasets": batch})
+            total["added"] += outcome["added"]
+            total["updated"] += outcome["updated"]
+        return total
+
+
+def _batches(cards: list[dict]) -> list[list[dict]]:
+    batches: list[list[dict]] = [[]]
+    size = 0
+    for card in cards:
+        weight = card_bytes(card)
+        current = batches[-1]
+        if current and (
+            len(current) == MAX_DATASETS_PER_REQUEST or size + weight > MAX_REQUEST_BYTES
+        ):
+            current = []
+            batches.append(current)
+            size = 0
+        current.append(card)
+        size += weight
+    return batches
 
 
 def _project(item: dict) -> Project:

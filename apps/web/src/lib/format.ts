@@ -77,6 +77,7 @@ export function timeAgo(iso: string, now: Date = new Date()): string {
   if (seconds < 45) {
     return "just now";
   }
+  // Each unit, with how many of the unit before it make one.
   const steps: [number, string][] = [
     [60, "minute"],
     [60, "hour"],
@@ -86,13 +87,11 @@ export function timeAgo(iso: string, now: Date = new Date()): string {
   ];
   let value = seconds;
   let unit = "second";
-  for (const [size, name] of steps) {
-    if (value < size && unit !== "second") {
-      break;
-    }
+  for (const [index, [size, name]] of steps.entries()) {
     value = Math.round(value / size);
     unit = name;
-    if (value < (name === "minute" ? 60 : name === "hour" ? 24 : name === "day" ? 30 : 12)) {
+    const next = steps[index + 1];
+    if (next === undefined || value < next[0]) {
       break;
     }
   }
@@ -109,10 +108,18 @@ export function formatUserCode(code: string): string {
   return `${clean.slice(0, middle)}-${clean.slice(middle)}`;
 }
 
-/** Only a path inside this app is safe to send someone to after they sign in. */
+// Stands in for this app's own address. Nothing is ever fetched from it.
+const APP_ORIGIN = "http://crosswalk.invalid";
+
+/**
+ * Only a path inside this app is safe to send someone to after they sign in.
+ * The address is resolved the way a browser resolves it, so one that only
+ * looks like a path cannot lead somewhere else.
+ */
 export function safeNextPath(next: string | null): string {
-  if (next === null || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) {
+  if (next === null || !URL.canParse(next, APP_ORIGIN)) {
     return "/";
   }
-  return next;
+  const url = new URL(next, APP_ORIGIN);
+  return url.origin === APP_ORIGIN ? `${url.pathname}${url.search}${url.hash}` : "/";
 }

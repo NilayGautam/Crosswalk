@@ -27,12 +27,18 @@ export function errorMessage(body: unknown, status: number): string {
   return `Something went wrong (${status}).`;
 }
 
-async function request<T>(path: string, method = "GET", body?: unknown): Promise<T> {
+async function request<T>(
+  path: string,
+  method = "GET",
+  body?: unknown,
+  keepalive = false,
+): Promise<T> {
   let response: Response;
   try {
     response = await fetch(path, {
       method,
       credentials: "same-origin",
+      keepalive,
       headers: body === undefined ? undefined : { "content-type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -101,7 +107,8 @@ export const api = {
   datasets: async (projectId: string) =>
     (await request<{ datasets: Dataset[] }>(`/api/projects/${projectId}/datasets`)).datasets,
   moveDataset: (projectId: string, datasetId: string, x: number, y: number) =>
-    request<unknown>(`/api/projects/${projectId}/datasets/${datasetId}`, "PATCH", { x, y }),
+    // A move may be sent as its page goes away, and must outlive it.
+    request<unknown>(`/api/projects/${projectId}/datasets/${datasetId}`, "PATCH", { x, y }, true),
   removeDataset: (projectId: string, datasetId: string) =>
     request<unknown>(`/api/projects/${projectId}/datasets/${datasetId}`, "DELETE"),
 

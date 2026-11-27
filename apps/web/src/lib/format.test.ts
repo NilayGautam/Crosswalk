@@ -83,6 +83,18 @@ describe("safeNextPath", () => {
     expect(safeNextPath("https://evil.example")).toBe("/");
     expect(safeNextPath("//evil.example")).toBe("/");
     expect(safeNextPath("/\\evil.example")).toBe("/");
+    expect(safeNextPath("javascript:alert(1)")).toBe("/");
+  });
+
+  it("refuses an address a browser reads as another site once it drops tabs and newlines", () => {
+    expect(safeNextPath("/\t/evil.example")).toBe("/");
+    expect(safeNextPath("/\n/evil.example")).toBe("/");
+    expect(safeNextPath("/\r/evil.example")).toBe("/");
+    expect(safeNextPath("\t//evil.example")).toBe("/");
+  });
+
+  it("keeps the query and the fragment of a path inside the app", () => {
+    expect(safeNextPath("/project/?id=p1#card")).toBe("/project/?id=p1#card");
   });
 });
 

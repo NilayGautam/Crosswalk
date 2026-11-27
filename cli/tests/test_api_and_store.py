@@ -131,6 +131,36 @@ def test_sending_datasets():
     }
 
 
+# The server takes at most 500 datasets and 16 MB in one request.
+def test_many_datasets_are_sent_in_requests_the_server_accepts():
+    sizes = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        count = len(json.loads(request.content)["datasets"])
+        sizes.append(count)
+        return httpx.Response(200, json={"added": count - 1, "updated": 1})
+
+    cards = [{"key": f"{number}.csv"} for number in range(1201)]
+    outcome = client(handler, "t").send_datasets("p1", cards)
+    assert sizes == [500, 500, 201]
+    assert outcome == {"added": 1198, "updated": 3}
+
+
+def test_heavy_datasets_are_sent_in_requests_under_the_size_limit():
+    bodies = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(request.content)
+        return httpx.Response(200, json={"added": 1, "updated": 0})
+
+    cards = [{"key": f"{number}.csv", "filler": "x" * 3_000_000} for number in range(7)]
+    client(handler, "t").send_datasets("p1", cards)
+    assert len(bodies) > 1
+    assert all(len(body) <= 16 * 1024 * 1024 for body in bodies)
+    sent = [card["key"] for body in bodies for card in json.loads(body)["datasets"]]
+    assert sent == [card["key"] for card in cards]
+
+
 def test_tokens_in_a_file_are_kept_per_server(tmp_path: Path, monkeypatch):
     path = tmp_path / "nested" / "tokens.json"
     monkeypatch.setenv("CROSSWALK_TOKEN_FILE", str(path))

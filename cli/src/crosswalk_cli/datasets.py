@@ -10,6 +10,7 @@ from pathlib import Path
 import polars as pl
 
 from crosswalk_cli.profile import ColumnProfile, profile_frame
+from crosswalk_cli.store import LINK_FOLDER
 
 # Profiles are computed from at most this many rows, so huge files stay fast.
 # The row count is always the real one.
@@ -26,13 +27,11 @@ FORMATS = {
     ".dta": "dta",
 }
 
-# Folders that never hold a researcher's datasets.
+# Tool folders, which never hold a researcher's datasets.
 SKIPPED_FOLDERS = {
     "node_modules",
     "__pycache__",
     "crosswalk_out",
-    "venv",
-    "env",
     "site-packages",
 }
 
@@ -71,39 +70,54 @@ class Unreadable:
 class ScanResult:
     cards: list[DatasetCard] = field(default_factory=list)
     unreadable: list[Unreadable] = field(default_factory=list)
+    skipped_folders: list[str] = field(default_factory=list)
     linked_folders: int = 0
+    linked_files: int = 0
 
 
 @dataclass(frozen=True)
 class FoundFiles:
     files: list[Path]
+    # Hidden and tool folders that were not entered, relative to the root.
+    skipped_folders: list[str]
     linked_folders: int
+    linked_files: int
 
 
 def find_files(root: Path, *, follow_links: bool = False) -> FoundFiles:
     """Every dataset file under the folder, in a stable order.
 
     Hidden folders, tool folders, and Office lock files are left out. Folders
-    that are links are only entered when asked, and are counted otherwise.
+    and files that are links are only read when asked. Everything left out
+    for being a folder or a link is reported, except the folder that holds
+    this folder's own link to a project.
     """
     files: list[Path] = []
-    linked = 0
+    skipped: list[str] = []
+    linked_folders = 0
+    linked_files = 0
     for current, folders, names in os.walk(root, followlinks=follow_links):
+        here = Path(current)
         kept = []
         for folder in sorted(folders):
-            if folder.startswith(".") or folder in SKIPPED_FOLDERS:
+            if here == root and folder == LINK_FOLDER:
                 continue
-            if not follow_links and (Path(current) / folder).is_symlink():
-                linked += 1
+            if folder.startswith(".") or folder in SKIPPED_FOLDERS:
+                skipped.append((here / folder).relative_to(root).as_posix())
+                continue
+            if not follow_links and (here / folder).is_symlink():
+                linked_folders += 1
                 continue
             kept.append(folder)
         folders[:] = kept
         for name in sorted(names):
-            if name.startswith((".", "~$")):
+            if name.startswith((".", "~$")) or Path(name).suffix.lower() not in FORMATS:
                 continue
-            if Path(name).suffix.lower() in FORMATS:
-                files.append(Path(current) / name)
-    return FoundFiles(sorted(files), linked)
+            if not follow_links and (here / name).is_symlink():
+                linked_files += 1
+                continue
+            files.append(here / name)
+    return FoundFiles(sorted(files), sorted(skipped), linked_folders, linked_files)
 
 
 def scan(root: Path, files: list[Path]) -> Iterator[tuple[Path, list[DatasetCard] | Unreadable]]:
@@ -167,6 +181,8 @@ def _read_delimited(file: Path, separator: str) -> tuple[pl.DataFrame, int]:
         "infer_schema": False,
         "encoding": "utf8-lossy",
         "truncate_ragged_lines": True,
+        # A file name is a name, even with brackets or a star in it.
+        "glob": False,
     }
     frame = pl.read_csv(file, n_rows=PROFILE_ROW_LIMIT, **options)
     if frame.height < PROFILE_ROW_LIMIT:
@@ -176,7 +192,7 @@ def _read_delimited(file: Path, separator: str) -> tuple[pl.DataFrame, int]:
 
 
 def _read_parquet(file: Path) -> tuple[pl.DataFrame, int]:
-    lazy = pl.scan_parquet(file)
+    lazy = pl.scan_parquet(file, glob=False)
     rows = lazy.select(pl.len()).collect().item()
     return lazy.head(PROFILE_ROW_LIMIT).collect(), int(rows)
 

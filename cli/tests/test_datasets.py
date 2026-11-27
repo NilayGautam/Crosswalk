@@ -5,7 +5,7 @@ import pytest
 import xlwt
 
 from conftest import HEADERS, ROWS, sample_frame
-from crosswalk_cli import datasets
+from crosswalk_cli import datasets, store
 from crosswalk_cli.datasets import Unreadable, find_files, read_cards, scan
 
 
@@ -104,7 +104,7 @@ def test_find_files_skips_what_is_not_a_dataset(tmp_path: Path):
     (tmp_path / "notes.txt").write_text("hello", encoding="utf-8")
     (tmp_path / "~$keep.xlsx").write_text("lock", encoding="utf-8")
     (tmp_path / ".hidden.csv").write_text("a\n1\n", encoding="utf-8")
-    for folder in (".git", "node_modules", "crosswalk_out", "nested"):
+    for folder in (".git", "node_modules", "crosswalk_out", "nested", "nested/__pycache__"):
         (tmp_path / folder).mkdir()
         (tmp_path / folder / "inner.CSV").write_text("a\n1\n", encoding="utf-8")
     found = find_files(tmp_path)
@@ -112,6 +112,34 @@ def test_find_files_skips_what_is_not_a_dataset(tmp_path: Path):
         "keep.csv",
         "nested/inner.CSV",
     ]
+    # Every folder that was not entered is named, so nothing is left out quietly.
+    assert found.skipped_folders == [
+        ".git",
+        "crosswalk_out",
+        "nested/__pycache__",
+        "node_modules",
+    ]
+
+
+def test_folders_named_env_and_venv_are_read(tmp_path: Path):
+    # A folder of environmental data can be called env.
+    for folder in ("env", "venv"):
+        (tmp_path / folder).mkdir()
+        (tmp_path / folder / "rain.csv").write_text("a\n1\n", encoding="utf-8")
+    found = find_files(tmp_path)
+    assert [file.relative_to(tmp_path).as_posix() for file in found.files] == [
+        "env/rain.csv",
+        "venv/rain.csv",
+    ]
+    assert found.skipped_folders == []
+
+
+def test_the_folder_holding_the_project_link_is_not_reported(tmp_path: Path):
+    store.save_link(tmp_path, store.Link("http://crosswalk.test", "p1", "Cases"))
+    (tmp_path / "keep.csv").write_text("a\n1\n", encoding="utf-8")
+    found = find_files(tmp_path)
+    assert [file.name for file in found.files] == ["keep.csv"]
+    assert found.skipped_folders == []
 
 
 def test_linked_folders_are_counted_and_only_entered_when_asked(tmp_path: Path):
@@ -128,6 +156,27 @@ def test_linked_folders_are_counted_and_only_entered_when_asked(tmp_path: Path):
 
     followed = find_files(inside, follow_links=True)
     assert [file.name for file in followed.files] == ["far.csv"]
+    assert followed.linked_folders == 0
+
+
+def test_linked_files_are_counted_and_only_read_when_asked(tmp_path: Path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "far.csv").write_text("a\n1\n", encoding="utf-8")
+    (outside / "notes.txt").write_text("hello", encoding="utf-8")
+    inside = tmp_path / "inside"
+    inside.mkdir()
+    (inside / "near.csv").write_text("a\n1\n", encoding="utf-8")
+    (inside / "linked.csv").symlink_to(outside / "far.csv")
+    (inside / "notes.txt").symlink_to(outside / "notes.txt")
+
+    found = find_files(inside)
+    assert [file.name for file in found.files] == ["near.csv"]
+    assert found.linked_files == 1
+
+    followed = find_files(inside, follow_links=True)
+    assert [file.name for file in followed.files] == ["linked.csv", "near.csv"]
+    assert followed.linked_files == 0
 
 
 def test_an_unreadable_file_is_reported_and_the_rest_still_read(tmp_path: Path):
@@ -162,3 +211,12 @@ def test_card_json_uses_the_server_field_names(data_folder: Path):
         "uniqueRate",
         "shape",
     }
+
+
+def test_a_file_name_with_brackets_or_a_star_is_read_as_a_name(tmp_path: Path):
+    frame = sample_frame()
+    frame.write_csv(tmp_path / "survey[clean]*.csv")
+    frame.write_parquet(tmp_path / "survey[clean]*.parquet")
+    cards = cards_in(tmp_path)
+    assert [card.key for card in cards] == ["survey[clean]*.csv", "survey[clean]*.parquet"]
+    assert [card.row_count for card in cards] == [3, 3]

@@ -48,7 +48,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dataDir,
     publicUrl,
     trustedOrigins: [...new Set([publicUrl, serverUrl])],
-    secret: env.CROSSWALK_AUTH_SECRET?.trim() || loadOrCreateSecret(dataDir),
+    secret: loadOrCreateSecret(dataDir),
     google: clientId && clientSecret ? { clientId, clientSecret } : null,
     webDist: webDist !== null && existsSync(webDist) ? webDist : null,
   };

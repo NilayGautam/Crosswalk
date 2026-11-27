@@ -45,7 +45,9 @@ function CanvasInner({ projectId, datasets, onRemoved }: CanvasProps) {
   const initialized = useNodesInitialized();
   const seen = useRef<Set<string> | null>(null);
   const fitted = useRef(false);
-  const pending = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const pending = useRef(
+    new Map<string, { timer: ReturnType<typeof setTimeout>; send: () => void }>(),
+  );
 
   const remove = useCallback(
     async (datasetId: string) => {
@@ -112,32 +114,38 @@ function CanvasInner({ projectId, datasets, onRemoved }: CanvasProps) {
     });
   }, [initialized, nodes.length, flow]);
 
+  // A move still waiting to be saved is sent at once when the canvas or the
+  // page goes away, so leaving right after a drag does not lose it.
   useEffect(() => {
-    const timers = pending.current;
-    return () => {
-      for (const timer of timers.values()) {
-        clearTimeout(timer);
+    const moves = pending.current;
+    const flush = () => {
+      for (const move of [...moves.values()]) {
+        clearTimeout(move.timer);
+        move.send();
       }
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
     };
   }, []);
 
   const save = useCallback(
     (id: string, x: number, y: number) => {
-      const timers = pending.current;
-      const waiting = timers.get(id);
+      const moves = pending.current;
+      const waiting = moves.get(id);
       if (waiting !== undefined) {
-        clearTimeout(waiting);
+        clearTimeout(waiting.timer);
       }
-      timers.set(
-        id,
-        setTimeout(() => {
-          timers.delete(id);
-          api.moveDataset(projectId, id, x, y).then(
-            () => setSaveFailed(false),
-            () => setSaveFailed(true),
-          );
-        }, SAVE_DELAY_MS),
-      );
+      const send = () => {
+        moves.delete(id);
+        api.moveDataset(projectId, id, x, y).then(
+          () => setSaveFailed(false),
+          () => setSaveFailed(true),
+        );
+      };
+      moves.set(id, { timer: setTimeout(send, SAVE_DELAY_MS), send });
     },
     [projectId],
   );

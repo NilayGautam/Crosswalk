@@ -16,3 +16,5 @@ __pycache__/
 .DS_Store
 .crosswalk/
 next-env.d.ts
+# Written by next dev on every run.
+apps/web/AGENTS.md

@@ -19,6 +19,8 @@ export type DatasetFormat = (typeof DATASET_FORMATS)[number];
 
 export const MAX_COLUMNS = 5000;
 export const MAX_DATASETS_PER_REQUEST = 500;
+/** Row counts are stored as 32-bit integers. */
+export const MAX_ROW_COUNT = 2_147_483_647;
 
 /**
  * What the CLI reports about one column. It describes the column's form and
@@ -47,9 +49,9 @@ export const datasetCardSchema = z.object({
   path: z.string().min(1).max(1000),
   sheet: z.string().max(500).nullable(),
   format: z.enum(DATASET_FORMATS),
-  rowCount: z.number().int().min(0),
+  rowCount: z.number().int().min(0).max(MAX_ROW_COUNT),
   /** How many rows the column profiles were computed from. */
-  profiledRows: z.number().int().min(0),
+  profiledRows: z.number().int().min(0).max(MAX_ROW_COUNT),
   columns: z.array(columnProfileSchema).max(MAX_COLUMNS),
 });
 export type DatasetCard = z.infer<typeof datasetCardSchema>;

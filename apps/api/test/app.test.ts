@@ -298,6 +298,11 @@ describe("datasets", () => {
 
   it("refuses a malformed upload and stores nothing", async () => {
     const { browser, projectId, send } = await linked();
+    // Row counts are stored as 32-bit integers, so a larger one is refused, not a crash.
+    const tooMany = { ...card("a.csv"), rowCount: 2_147_483_648 };
+    expect(
+      (await send(`/api/projects/${projectId}/datasets`, "PUT", { datasets: [tooMany] })).status,
+    ).toBe(400);
     const bad = { ...card("a.csv"), rowCount: -1 };
     expect(
       (await send(`/api/projects/${projectId}/datasets`, "PUT", { datasets: [bad] })).status,

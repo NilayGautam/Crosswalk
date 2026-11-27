@@ -150,6 +150,17 @@ def test_categorical_text():
 
 def test_mask():
     assert mask("Ab-12 é") == "AA-99 A"
+    assert mask("$12.50 (net)") == "$99.99 (AAA)"
+
+
+def test_mask_hides_every_character_that_carries_meaning():
+    # Vowel signs and viramas are marks, not letters, and are still hidden.
+    assert mask("भारत") == "AAAA"
+    assert mask("हिन्दी") == "AAAAAA"
+    # Roman numerals and fractions are numbers without being decimal digits.
+    assert mask("Ⅳ") == "9"
+    assert mask("½") == "9"
+    assert mask("Ⓐ ✅") == "A A"
 
 
 def test_a_profile_never_repeats_a_value():
@@ -171,3 +182,20 @@ def test_a_profile_never_repeats_a_value():
                 assert piece not in sent, f"{piece!r} from {column} leaked"
     for fragment in ("ZQ", "773", "1977", "@@@"):
         assert fragment not in sent
+
+
+def test_a_pattern_never_repeats_a_character_in_any_script():
+    values = {
+        "country": ["भारत-01", "भारत-02", "भारत-03"],
+        "quarter": ["Ⅳ/2020", "Ⅳ/2021", "Ⅳ/2022"],
+        "status": ["✅ ok1", "✅ ok2", "✅ ok3"],
+    }
+    profiles = profile_frame(pl.DataFrame(values))
+    assert [column.shape.split(", ")[2] for column in profiles] == [
+        "pattern AAAA-99",
+        "pattern 9/9999",
+        "pattern A AA9",
+    ]
+    sent = json.dumps([column.to_json() for column in profiles], ensure_ascii=False)
+    for character in "भारतⅣ✅":
+        assert character not in sent

@@ -41,6 +41,8 @@ export interface AppDeps {
 type Env = {
   Variables: {
     userId: string;
+    userName: string;
+    userEmail: string;
     sessionId: string;
   };
 };
@@ -115,6 +117,8 @@ export function createApp(deps: AppDeps) {
       return c.json({ error: "You are not signed in." }, 401);
     }
     c.set("userId", current.user.id);
+    c.set("userName", current.user.name);
+    c.set("userEmail", current.user.email);
     c.set("sessionId", current.session.id);
     await next();
   });
@@ -138,14 +142,9 @@ export function createApp(deps: AppDeps) {
     }
   }
 
-  api.get("/me", async (c) => {
-    const current = await auth.api.getSession({ headers: c.req.raw.headers });
-    return c.json({
-      id: c.get("userId"),
-      name: current?.user.name ?? "",
-      email: current?.user.email ?? "",
-    });
-  });
+  api.get("/me", (c) =>
+    c.json({ id: c.get("userId"), name: c.get("userName"), email: c.get("userEmail") }),
+  );
 
   api.get("/projects", async (c) => {
     const rows = await db
