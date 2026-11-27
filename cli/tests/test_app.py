@@ -180,3 +180,30 @@ def test_server_before_a_subcommand_is_used(tmp_path: Path, monkeypatch):
     result = CliRunner().invoke(cli.app, ["--server", "http://other.test:9000", "status"])
     assert result.exit_code == 0, result.output
     assert "Server: http://other.test:9000" in result.output
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--server", "http://other.test:9000", "status"],
+        ["status", "--server", "http://other.test:9000"],
+    ],
+)
+def test_an_explicit_server_wins_over_the_environment(
+    tmp_path: Path, monkeypatch, arguments: list[str]
+):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CROSSWALK_TOKEN_FILE", str(tmp_path / "tokens.json"))
+    monkeypatch.setenv("CROSSWALK_SERVER", "http://env.test:8787")
+    result = CliRunner().invoke(cli.app, arguments)
+    assert result.exit_code == 0, result.output
+    assert "Server: http://other.test:9000" in result.output
+
+
+def test_the_environment_server_is_used_without_a_flag(tmp_path: Path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CROSSWALK_TOKEN_FILE", str(tmp_path / "tokens.json"))
+    monkeypatch.setenv("CROSSWALK_SERVER", "http://env.test:8787")
+    result = CliRunner().invoke(cli.app, ["status"])
+    assert result.exit_code == 0, result.output
+    assert "Server: http://env.test:8787" in result.output

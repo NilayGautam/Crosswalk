@@ -13,8 +13,9 @@ def cards_in(folder: Path):
     found = find_files(folder)
     result = []
     for _, outcome in scan(folder, found.files):
-        assert not isinstance(outcome, Unreadable), outcome
-        result.extend(outcome)
+        for card in outcome:
+            assert not isinstance(card, Unreadable), card
+            result.append(card)
     return result
 
 
@@ -183,7 +184,7 @@ def test_an_unreadable_file_is_reported_and_the_rest_still_read(tmp_path: Path):
     sample_frame().write_csv(tmp_path / "good.csv")
     (tmp_path / "broken.parquet").write_text("this is not parquet", encoding="utf-8")
     outcomes = dict(scan(tmp_path, find_files(tmp_path).files))
-    broken = outcomes[tmp_path / "broken.parquet"]
+    [broken] = outcomes[tmp_path / "broken.parquet"]
     assert isinstance(broken, Unreadable)
     assert broken.path == "broken.parquet"
     assert broken.reason

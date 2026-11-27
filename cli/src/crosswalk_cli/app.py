@@ -32,7 +32,10 @@ errors = Console(stderr=True, highlight=False, markup=False, emoji=False)
 
 ServerOption = Annotated[
     str | None,
-    typer.Option("--server", help="Address of the Crosswalk server.", envvar="CROSSWALK_SERVER"),
+    typer.Option(
+        "--server",
+        help="Address of the Crosswalk server. Without it, CROSSWALK_SERVER is used.",
+    ),
 ]
 
 
@@ -224,10 +227,10 @@ def _scan_folder(folder: Path, follow_links: bool) -> ScanResult:
         task = progress.add_task("", total=len(found.files))
         for file, outcome in scan(folder, found.files):
             progress.update(task, advance=1, description=file.name)
-            if isinstance(outcome, Unreadable):
-                result.unreadable.append(outcome)
-                continue
             for card in outcome:
+                if isinstance(card, Unreadable):
+                    result.unreadable.append(card)
+                    continue
                 problem = limits.problem(card.to_json())
                 if problem is None:
                     result.cards.append(card)

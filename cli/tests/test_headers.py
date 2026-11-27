@@ -10,6 +10,12 @@ from crosswalk_cli.headers import HeaderLooksLikeData, check_header
 
 
 def outcome(folder: Path, name: str):
+    """What a single-table file gives: its card, or why it was held back."""
+    [single] = outcomes(folder, name)
+    return single
+
+
+def outcomes(folder: Path, name: str):
     found = find_files(folder)
     return dict(scan(folder, found.files))[folder / name]
 
@@ -62,6 +68,28 @@ def test_a_workbook_sheet_with_no_header_row_is_held_back(tmp_path: Path):
     held = outcome(tmp_path, "book.xlsx")
     assert isinstance(held, Unreadable)
     assert "first row" in held.reason
+
+
+def test_only_the_headerless_sheet_of_a_workbook_is_held_back(tmp_path: Path):
+    import xlsxwriter
+
+    path = tmp_path / "book.xlsx"
+    with xlsxwriter.Workbook(path) as book:
+        data = book.add_worksheet("Data")
+        for index, row in enumerate(
+            [["firm_id", "firm_name"], ["A1", "Northwind"], ["B2", "Contoso"]]
+        ):
+            data.write_row(index, 0, row)
+        codes = book.add_worksheet("Codes")
+        for index, row in enumerate([["001001", "2019"], ["001002", "2020"], ["020003", "2021"]]):
+            codes.write_row(index, 0, row)
+    card, held = outcomes(tmp_path, "book.xlsx")
+    assert not isinstance(card, Unreadable)
+    assert card.sheet == "Data"
+    assert [column.name for column in card.columns] == ["firm_id", "firm_name"]
+    assert isinstance(held, Unreadable)
+    assert held.path == "book.xlsx / Codes"
+    assert "sheet Codes" in held.reason
 
 
 def test_the_other_files_are_still_read(tmp_path: Path):

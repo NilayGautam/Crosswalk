@@ -121,16 +121,14 @@ def find_files(root: Path, *, follow_links: bool = False) -> FoundFiles:
     return FoundFiles(sorted(files), sorted(skipped), linked_folders, linked_files)
 
 
-def scan(root: Path, files: list[Path]) -> Iterator[tuple[Path, list[DatasetCard] | Unreadable]]:
+def scan(root: Path, files: list[Path]) -> Iterator[tuple[Path, list[DatasetCard | Unreadable]]]:
     """Read each file in turn. A file that cannot be read is reported, not fatal."""
     for file in files:
         relative = file.relative_to(root).as_posix()
         try:
             yield file, read_cards(file, relative)
-        except HeaderLooksLikeData as held:
-            yield file, Unreadable(relative, str(held))
         except Exception as error:
-            yield file, Unreadable(relative, _reason(error))
+            yield file, [Unreadable(relative, _reason(error))]
 
 
 def _reason(error: Exception) -> str:
@@ -141,14 +139,20 @@ def _reason(error: Exception) -> str:
     return text if len(text) <= 160 else f"{text[:157]}..."
 
 
-def read_cards(file: Path, relative: str) -> list[DatasetCard]:
-    """One card per table: one for a flat file, one per sheet for a workbook."""
+def read_cards(file: Path, relative: str) -> list[DatasetCard | Unreadable]:
+    """One card per table: one for a flat file, one per sheet for a workbook.
+
+    A table whose first row looks like data is held back in its card's place.
+    """
     kind = FORMATS[file.suffix.lower()]
     if kind in ("xlsx", "xls"):
         return _read_workbook(file, relative, kind)
     if kind in ("csv", "tsv"):
         frame, rows = _read_delimited(file, "\t" if kind == "tsv" else ",")
-        check_header(frame)
+        try:
+            check_header(frame)
+        except HeaderLooksLikeData as held:
+            return [Unreadable(relative, str(held))]
     elif kind == "parquet":
         frame, rows = _read_parquet(file)
     else:
@@ -213,7 +217,7 @@ def _read_stata(file: Path) -> tuple[pl.DataFrame, int]:
     return pl.from_pandas(frame), int(rows)
 
 
-def _read_workbook(file: Path, relative: str, kind: str) -> list[DatasetCard]:
+def _read_workbook(file: Path, relative: str, kind: str) -> list[DatasetCard | Unreadable]:
     import fastexcel
 
     reader = fastexcel.read_excel(file)
@@ -222,20 +226,27 @@ def _read_workbook(file: Path, relative: str, kind: str) -> list[DatasetCard]:
         sheet = reader.load_sheet(sheet_name, n_rows=PROFILE_ROW_LIMIT)
         if sheet.width == 0:
             continue
-        frame = sheet.to_polars()
-        check_header(frame, sheet_name if len(reader.sheet_names) > 1 else None)
-        tables.append((sheet_name, frame, int(sheet.total_height)))
+        tables.append((sheet_name, sheet.to_polars(), int(sheet.total_height)))
     file_name = Path(relative).name
-    return [
-        _card(
-            key=f"{relative}#{sheet_name}",
-            path=relative,
-            # A workbook with one table is known by its file name alone.
-            name=file_name if len(tables) == 1 else f"{file_name} / {sheet_name}",
-            sheet=sheet_name,
-            kind=kind,
-            frame=frame,
-            rows=rows,
+    # A workbook with one table is known by its file name alone.
+    single = len(tables) == 1
+    outcomes: list[DatasetCard | Unreadable] = []
+    for sheet_name, frame, rows in tables:
+        try:
+            check_header(frame, None if single else sheet_name)
+        except HeaderLooksLikeData as held:
+            label = relative if single else f"{relative} / {sheet_name}"
+            outcomes.append(Unreadable(label, str(held)))
+            continue
+        outcomes.append(
+            _card(
+                key=f"{relative}#{sheet_name}",
+                path=relative,
+                name=file_name if single else f"{file_name} / {sheet_name}",
+                sheet=sheet_name,
+                kind=kind,
+                frame=frame,
+                rows=rows,
+            )
         )
-        for sheet_name, frame, rows in tables
-    ]
+    return outcomes
