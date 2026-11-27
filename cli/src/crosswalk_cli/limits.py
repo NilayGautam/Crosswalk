@@ -34,6 +34,13 @@ def card_bytes(card: dict) -> int:
 def problem(card: dict) -> str | None:
     """Why the server would refuse this card, or None when it would not."""
     columns = card["columns"]
+    names = [card["key"], card["name"], card["path"], card["sheet"] or ""]
+    names += [column["name"] for column in columns]
+    if any("\x00" in name for name in names):
+        return (
+            "a name in it holds a character that cannot be stored, "
+            "so the file may be saved as UTF-16 rather than UTF-8"
+        )
     if card["rowCount"] > MAX_ROW_COUNT:
         return f"it has more than {MAX_ROW_COUNT:,} rows"
     if len(columns) > MAX_COLUMNS:

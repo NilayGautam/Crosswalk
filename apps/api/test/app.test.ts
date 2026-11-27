@@ -230,6 +230,13 @@ describe("linking the CLI", () => {
     await browser.signUp("ada@example.com");
     const list = (await (await browser.fetch("/api/devices")).json()) as { devices: unknown[] };
     expect(list.devices).toEqual([]);
+
+    const current = (await (await browser.fetch("/api/auth/get-session")).json()) as {
+      session: { id: string };
+    };
+    const refused = await browser.json(`/api/devices/${current.session.id}`, "DELETE");
+    expect(refused.status).toBe(404);
+    expect((await browser.fetch("/api/me")).status).toBe(200);
   });
 });
 
@@ -294,6 +301,15 @@ describe("datasets", () => {
       "DELETE",
     );
     expect(missing.status).toBe(404);
+  });
+
+  it("refuses a NUL character with a message instead of a server error", async () => {
+    const { browser, projectId, send } = await linked();
+    const bad = card("a.csv", ["ok", "bro\u0000ken"]);
+    const response = await send(`/api/projects/${projectId}/datasets`, "PUT", { datasets: [bad] });
+    expect(response.status).toBe(400);
+    expect(await datasetsOf(browser, projectId)).toEqual([]);
+    expect((await browser.json("/api/projects", "POST", { name: "a\u0000b" })).status).toBe(400);
   });
 
   it("refuses a malformed upload and stores nothing", async () => {

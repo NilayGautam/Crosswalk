@@ -23,11 +23,23 @@ export const MAX_DATASETS_PER_REQUEST = 500;
 export const MAX_ROW_COUNT = 2_147_483_647;
 
 /**
+ * Text the database can store. Postgres refuses a NUL character, so it is
+ * refused here first, with a message instead of a server error.
+ */
+function text(max: number, min = 0) {
+  return z
+    .string()
+    .min(min)
+    .max(max)
+    .refine((value) => !value.includes("\u0000"), "must not contain a NUL character");
+}
+
+/**
  * What the CLI reports about one column. It describes the column's form and
  * never carries a cell value.
  */
 export const columnProfileSchema = z.object({
-  name: z.string().max(500),
+  name: text(500),
   type: z.enum(COLUMN_TYPES),
   /** Share of profiled rows where the cell is empty, from 0 to 1. */
   nullRate: z.number().min(0).max(1),
@@ -36,18 +48,18 @@ export const columnProfileSchema = z.object({
   /** Distinct non-empty values divided by non-empty rows, from 0 to 1. */
   uniqueRate: z.number().min(0).max(1),
   /** A description of what values look like, for example "6 digits". */
-  shape: z.string().max(200),
+  shape: text(200),
 });
 export type ColumnProfile = z.infer<typeof columnProfileSchema>;
 
 export const datasetCardSchema = z.object({
   /** Stable identity inside a project: the relative path, plus the sheet for workbooks. */
-  key: z.string().min(1).max(1000),
+  key: text(1000, 1),
   /** The name shown on the card. */
-  name: z.string().min(1).max(500),
+  name: text(500, 1),
   /** Path relative to the linked folder. */
-  path: z.string().min(1).max(1000),
-  sheet: z.string().max(500).nullable(),
+  path: text(1000, 1),
+  sheet: text(500).nullable(),
   format: z.enum(DATASET_FORMATS),
   rowCount: z.number().int().min(0).max(MAX_ROW_COUNT),
   /** How many rows the column profiles were computed from. */
@@ -71,7 +83,14 @@ export const projectNameSchema = z
   .string()
   .transform((value) => value.trim())
   .pipe(
-    z.string().min(1, "Give the project a name.").max(80, "Keep the name under 80 characters."),
+    z
+      .string()
+      .min(1, "Give the project a name.")
+      .max(80, "Keep the name under 80 characters.")
+      .refine(
+        (value) => !value.includes("\u0000"),
+        "The name holds a character that cannot be stored.",
+      ),
   );
 
 export const projectBodySchema = z.object({ name: projectNameSchema });

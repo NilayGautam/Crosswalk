@@ -32,7 +32,9 @@ pnpm install-cli
 1. Open <http://localhost:8787>, create an account, and create a project.
 2. In a terminal, run `crosswalk login` and confirm the code in the browser.
 3. Open a terminal in a folder that holds datasets and run `crosswalk`.
-   It lists what it found, says what it will send, and asks before sending.
+   It lists what it found and every column name it will send, and asks before sending.
+   A file whose first row looks like data rather than column names is held back, because column names are sent.
+   Add a header row to that file and run `crosswalk` again.
 4. The cards appear on the open canvas.
    Drag them where you want them.
 

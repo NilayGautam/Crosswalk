@@ -82,6 +82,8 @@ describe("safeNextPath", () => {
     expect(safeNextPath(null)).toBe("/");
     expect(safeNextPath("https://evil.example")).toBe("/");
     expect(safeNextPath("//evil.example")).toBe("/");
+    expect(safeNextPath("/.//evil.example")).toBe("/");
+    expect(safeNextPath("/./../\\evil.example")).toBe("/");
     expect(safeNextPath("/\\evil.example")).toBe("/");
     expect(safeNextPath("javascript:alert(1)")).toBe("/");
   });

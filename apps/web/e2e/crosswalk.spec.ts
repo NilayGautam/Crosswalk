@@ -358,13 +358,24 @@ test.describe("the command line tool and the canvas", () => {
 
   test("the tool links a folder by asking which project", async ({ page }) => {
     await signUp(page);
-    await createProject(page, "Only project");
+    await createProject(page, "First project");
+    const second = await createProject(page, "Second project");
     const terminal = new Terminal(SERVER_URL);
     terminal.write("firms.csv", FIRMS);
     await linkTerminal(page, terminal);
 
     const status = await terminal.run(["status"]);
     expect(status.output).toContain("this folder is not linked");
+
+    // An unlinked folder asks which project to send to, and remembers the answer.
+    // Projects are listed most recently changed first, so the second one is number 1.
+    const sent = await terminal.run(["--yes"], "1\n");
+    expect(sent.output).toContain("Which project should this folder send its datasets to?");
+    expect(sent.output).toContain("This folder is linked to Second project.");
+    expect(sent.code).toBe(0);
+    expect((await terminal.run(["status"])).output).toContain("Project: Second project");
+    await page.goto(`/project/?id=${second}`);
+    await expect(page.getByRole("article", { name: "Dataset firms.csv" })).toBeVisible();
 
     const empty = new Terminal(SERVER_URL);
     const nothing = await empty.run(["--yes"]);

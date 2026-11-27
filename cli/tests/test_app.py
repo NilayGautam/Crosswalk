@@ -140,3 +140,43 @@ def test_the_summary_names_what_was_not_read(folder: Path, monkeypatch):
         "linked/far.csv",
     }
     assert "linked f" not in followed.output
+
+
+def test_a_name_with_a_nul_character_is_skipped_and_the_rest_is_sent(folder: Path, monkeypatch):
+    link(folder)
+    (folder / "utf16.csv").write_bytes("a,b\n1,2\n".encode("utf-16-le"))
+    write_csv(folder / "good.csv")
+    server = Server()
+    result = run(monkeypatch, server, ["--yes"])
+    assert result.exit_code == 0, result.output
+    assert server.keys == ["good.csv"]
+    assert "UTF-16" in result.output
+
+
+def test_the_column_names_are_listed_before_sending(folder: Path, monkeypatch):
+    link(folder)
+    write_csv(folder / "firms.csv", "firm_id,firm_name")
+    result = run(monkeypatch, Server(), ["--yes"])
+    assert "firms.csv: firm_id, firm_name" in result.output
+
+
+def test_a_headerless_file_is_held_back_and_named(folder: Path, monkeypatch):
+    link(folder)
+    (folder / "raw.csv").write_text(
+        "001001,Northwind,2019\n001002,Contoso,2020\n", encoding="utf-8"
+    )
+    write_csv(folder / "good.csv")
+    server = Server()
+    result = run(monkeypatch, server, ["--yes"])
+    assert server.keys == ["good.csv"]
+    assert "raw.csv" in result.output
+    assert "looks like data" in result.output
+
+
+def test_server_before_a_subcommand_is_used(tmp_path: Path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CROSSWALK_TOKEN_FILE", str(tmp_path / "tokens.json"))
+    monkeypatch.delenv("CROSSWALK_SERVER", raising=False)
+    result = CliRunner().invoke(cli.app, ["--server", "http://other.test:9000", "status"])
+    assert result.exit_code == 0, result.output
+    assert "Server: http://other.test:9000" in result.output

@@ -121,5 +121,11 @@ export function safeNextPath(next: string | null): string {
     return "/";
   }
   const url = new URL(next, APP_ORIGIN);
-  return url.origin === APP_ORIGIN ? `${url.pathname}${url.search}${url.hash}` : "/";
+  if (url.origin !== APP_ORIGIN) {
+    return "/";
+  }
+  const path = `${url.pathname}${url.search}${url.hash}`;
+  // "/.//other.example" resolves to a path that starts with two slashes, which
+  // a browser would read as another site.
+  return path.startsWith("//") ? "/" : path;
 }

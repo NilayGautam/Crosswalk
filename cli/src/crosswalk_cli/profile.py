@@ -130,8 +130,13 @@ def _span(low: int, high: int, unit: str) -> str:
 
 
 def _whole_number_shape(present: pl.Series) -> str:
-    lengths = present.abs().cast(pl.Float64).round(0).cast(pl.Int128).cast(pl.String)
-    lengths = lengths.str.len_chars()
+    if present.dtype.is_integer():
+        lengths = present.cast(pl.Int128).abs().cast(pl.String).str.len_chars()
+    else:
+        # A float can be far larger than any integer type holds, so its digits
+        # are counted from its size instead of by writing it out.
+        size = present.abs().round(0).clip(lower_bound=1.0)
+        lengths = (size.log10().floor() + 1).cast(pl.Int64)
     shape = f"whole numbers, {_span(int(lengths.min()), int(lengths.max()), 'digit')}"
     if bool((present < 0).any()):
         shape += ", some negative"

@@ -199,3 +199,14 @@ def test_a_pattern_never_repeats_a_character_in_any_script():
     sent = json.dumps([column.to_json() for column in profiles], ensure_ascii=False)
     for character in "भारतⅣ✅":
         assert character not in sent
+
+
+def test_huge_whole_floats_are_counted_without_overflow():
+    result = profile([1e38, 2e40, None], dtype=pl.Float64)
+    assert result.type == "integer"
+    assert result.shape == "whole numbers, 39 to 41 digits"
+
+
+def test_whole_number_digits_count_large_integers():
+    result = profile([9_223_372_036_854_775_807, -5], dtype=pl.Int64)
+    assert result.shape == "whole numbers, 1 to 19 digits, some negative"

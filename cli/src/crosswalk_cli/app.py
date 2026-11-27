@@ -82,6 +82,8 @@ def root(
 ) -> None:
     """Scan this folder and send its datasets to the linked project."""
     if context.invoked_subcommand is not None:
+        # `crosswalk --server X login` means the same as `crosswalk login --server X`.
+        context.obj = server
         return
     folder = Path.cwd()
     result = _scan_folder(folder, follow_links)
@@ -108,7 +110,10 @@ def root(
     console.print()
     console.print(Text.assemble("This will be sent to the project ", (target.name, "bold"), ":"))
     console.print("  - file names, sheet names, and row counts")
-    console.print("  - column names")
+    console.print("  - these column names:")
+    for card in result.cards:
+        names = ", ".join(column.name for column in card.columns) or "(no columns)"
+        console.print(Text.assemble("      ", (_label(card), "bold"), ": ", names))
     console.print("  - for each column: its type, how often it is empty, how many")
     console.print("    different values it has, and what its values look like")
     console.print("No cell values are sent. Run `crosswalk --show` to read every byte first.")
@@ -124,13 +129,14 @@ def root(
 
 @app.command()
 def login(
+    context: typer.Context,
     server: ServerOption = None,
     no_browser: Annotated[
         bool, typer.Option("--no-browser", help="Do not open the browser automatically.")
     ] = False,
 ) -> None:
     """Link this computer to your Crosswalk account."""
-    address = store.server_url(server)
+    address = store.server_url(server or context.obj)
     client = Client(address)
     code = client.request_device_code()
     console.print()
@@ -150,9 +156,9 @@ def login(
 
 
 @app.command()
-def logout(server: ServerOption = None) -> None:
+def logout(context: typer.Context, server: ServerOption = None) -> None:
     """Unlink this computer."""
-    address = store.server_url(server)
+    address = store.server_url(server or context.obj)
     token = store.load_token(address)
     if token is None:
         console.print("This computer is not linked.")
@@ -167,21 +173,22 @@ def logout(server: ServerOption = None) -> None:
 
 @app.command()
 def link(
+    context: typer.Context,
     server: ServerOption = None,
     project: Annotated[
         str | None, typer.Option("--project", help="The id of the project to link to.")
     ] = None,
 ) -> None:
     """Choose which project this folder sends its datasets to."""
-    client = _client(server)
+    client = _client(server or context.obj)
     chosen = _choose_project(client, project)
     _save_link(client, chosen)
 
 
 @app.command()
-def status(server: ServerOption = None) -> None:
+def status(context: typer.Context, server: ServerOption = None) -> None:
     """Show the account and the project this folder is linked to."""
-    address = store.server_url(server)
+    address = store.server_url(server or context.obj)
     console.print(f"Server: {address}")
     token = store.load_token(address)
     if token is None:

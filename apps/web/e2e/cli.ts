@@ -27,8 +27,14 @@ export class Terminal {
     writeFileSync(path, content, "utf8");
   }
 
-  /** Starts `crosswalk` with the given arguments, in the dataset folder. */
-  start(args: string[]): { process: ChildProcess; done: Promise<CliResult>; output: () => string } {
+  /**
+   * Starts `crosswalk` with the given arguments, in the dataset folder.
+   * `input` is typed into the command, as a person would answer its prompts.
+   */
+  start(
+    args: string[],
+    input?: string,
+  ): { process: ChildProcess; done: Promise<CliResult>; output: () => string } {
     const child = spawn(
       "uv",
       ["run", "--quiet", "--no-editable", "--project", CLI_PROJECT, "crosswalk", ...args],
@@ -42,9 +48,12 @@ export class Terminal {
           NO_COLOR: "1",
           TERM: "dumb",
         },
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
       },
     );
+    if (input !== undefined) {
+      child.stdin?.end(input);
+    }
     let output = "";
     child.stdout?.on("data", (chunk: Buffer) => {
       output += chunk.toString();
@@ -59,8 +68,8 @@ export class Terminal {
     return { process: child, done, output: () => output };
   }
 
-  async run(args: string[]): Promise<CliResult> {
-    return this.start(args).done;
+  async run(args: string[], input?: string): Promise<CliResult> {
+    return this.start(args, input).done;
   }
 }
 

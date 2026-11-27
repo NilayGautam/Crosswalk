@@ -9,6 +9,7 @@ from pathlib import Path
 
 import polars as pl
 
+from crosswalk_cli.headers import HeaderLooksLikeData, check_header
 from crosswalk_cli.profile import ColumnProfile, profile_frame
 from crosswalk_cli.store import LINK_FOLDER
 
@@ -126,6 +127,8 @@ def scan(root: Path, files: list[Path]) -> Iterator[tuple[Path, list[DatasetCard
         relative = file.relative_to(root).as_posix()
         try:
             yield file, read_cards(file, relative)
+        except HeaderLooksLikeData as held:
+            yield file, Unreadable(relative, str(held))
         except Exception as error:
             yield file, Unreadable(relative, _reason(error))
 
@@ -145,6 +148,7 @@ def read_cards(file: Path, relative: str) -> list[DatasetCard]:
         return _read_workbook(file, relative, kind)
     if kind in ("csv", "tsv"):
         frame, rows = _read_delimited(file, "\t" if kind == "tsv" else ",")
+        check_header(frame)
     elif kind == "parquet":
         frame, rows = _read_parquet(file)
     else:
@@ -218,7 +222,9 @@ def _read_workbook(file: Path, relative: str, kind: str) -> list[DatasetCard]:
         sheet = reader.load_sheet(sheet_name, n_rows=PROFILE_ROW_LIMIT)
         if sheet.width == 0:
             continue
-        tables.append((sheet_name, sheet.to_polars(), int(sheet.total_height)))
+        frame = sheet.to_polars()
+        check_header(frame, sheet_name if len(reader.sheet_names) > 1 else None)
+        tables.append((sheet_name, frame, int(sheet.total_height)))
     file_name = Path(relative).name
     return [
         _card(
