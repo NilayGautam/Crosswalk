@@ -1,0 +1,208 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/base.css";
+
+/*
+ * The Codebook. Paper, ink, and one red rubric. Square corners, ink rules,
+ * and a dotted leader wherever a label meets its value.
+ */
+@theme {
+  --color-paper: #f7f6f2;
+  --color-leaf: #ffffff;
+  --color-ink: #1b1b1b;
+  --color-mute: #5f646b;
+  --color-hair: #d6d3c9;
+  --color-wash: #efede6;
+  --color-rubric: #b3261e;
+  --color-rubric-deep: #8c1c16;
+  --color-rubric-wash: #fbe9e7;
+  --color-live: #2a6a3c;
+
+  --font-sans: var(--font-franklin), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-courier), ui-monospace, "Courier New", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+
+  --radius-none: 0;
+  --shadow-leaf: 0 1px 0 rgb(27 27 27 / 0.08), 0 14px 28px -18px rgb(27 27 27 / 0.45);
+  --shadow-lifted: 0 1px 0 rgb(27 27 27 / 0.1), 0 22px 36px -18px rgb(27 27 27 / 0.55);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: var(--color-mute) var(--color-paper);
+  }
+
+  body {
+    min-height: 100dvh;
+    font-size: var(--text-base);
+    line-height: 1.5;
+    caret-color: var(--color-rubric);
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: var(--color-ink);
+    color: var(--color-leaf);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  /* The dotted line that joins a label to its value. */
+  .leader {
+    flex: 1 1 1.5rem;
+    min-width: 1.5rem;
+    margin: 0 0.5rem;
+    border-bottom: 1px dotted var(--color-mute);
+    transform: translateY(-0.28em);
+  }
+
+  /* The double rule under a heading, as a codebook sets it. */
+  .double-rule {
+    border-bottom: 3px double var(--color-ink);
+  }
+
+  .link {
+    color: var(--color-ink);
+    text-decoration: underline;
+    transition: color 150ms var(--ease-out-expo);
+  }
+
+  .link:hover {
+    color: var(--color-rubric-deep);
+  }
+}
+
+/* The canvas. React Flow draws the nodes; these rules dress them. */
+.react-flow {
+  --xy-background-color: var(--color-paper);
+  background: var(--color-paper);
+}
+
+.react-flow__node {
+  cursor: grab;
+}
+
+.react-flow__node.dragging {
+  cursor: grabbing;
+}
+
+.react-flow__node:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+/* The card under the pointer or holding focus shows its entry above its neighbours. */
+.react-flow .react-flow__nodes .react-flow__node:is(:hover, :focus-within, .selected) {
+  /* biome-ignore lint/complexity/noImportantStyles: React Flow sets z-index inline */
+  z-index: 1000 !important;
+}
+
+.react-flow__controls {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-ink);
+  background: var(--color-leaf);
+}
+
+.react-flow__controls-button {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-hair);
+  background: var(--color-leaf);
+  color: var(--color-ink);
+  transition: background-color 150ms var(--ease-out-expo);
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--color-wash);
+}
+
+.react-flow__controls-button svg {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  fill: currentColor;
+}
+
+.react-flow__attribution {
+  background: transparent;
+  font-size: 0.6875rem;
+  color: var(--color-mute);
+}
+
+.react-flow__attribution a {
+  color: inherit;
+}
+
+.column-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-mute) var(--color-leaf);
+}
+
+@keyframes card-arrive {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* A card that has just come from the terminal is printed onto the canvas. */
+.card-arrive {
+  animation: card-arrive 420ms var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-arrive {
+    animation: none;
+  }
+
+  .animate-pulse {
+    animation: none;
+  }
+}
