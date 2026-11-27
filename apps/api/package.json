@@ -1,0 +1,29 @@
+{
+  "name": "@crosswalk/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "CROSSWALK_PUBLIC_URL=http://localhost:3210 CROSSWALK_WEB_DIST=none tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "reset-password": "tsx scripts/reset-password.ts"
+  },
+  "dependencies": {
+    "@crosswalk/contract": "workspace:*",
+    "@electric-sql/pglite": "^0.6.0",
+    "@hono/node-server": "^2.1.11",
+    "better-auth": "^1.7.28",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.23",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.4",
+    "drizzle-kit": "^0.31.11",
+    "vitest": "^5.1.2"
+  }
+}

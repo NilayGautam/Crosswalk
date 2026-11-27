@@ -1,0 +1,25 @@
+{
+  "name": "crosswalk",
+  "private": true,
+  "packageManager": "pnpm@12.23.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"pnpm --filter @crosswalk/api dev\" \"pnpm --filter @crosswalk/web dev\"",
+    "build": "pnpm --filter @crosswalk/web build",
+    "start": "pnpm build && pnpm --filter @crosswalk/api start",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test && uv --directory cli run --no-editable pytest -q",
+    "e2e": "pnpm --filter @crosswalk/web e2e",
+    "lint": "biome check . && uv --directory cli run --no-editable ruff check . && uv --directory cli run --no-editable ruff format --check .",
+    "format": "biome check --write .",
+    "reset-password": "pnpm --filter @crosswalk/api reset-password",
+    "install-cli": "sh scripts/install-cli.sh"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.9",
+    "concurrently": "^10.0.7",
+    "typescript": "6.0.3"
+  }
+}

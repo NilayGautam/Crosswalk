@@ -1,0 +1,419 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-26T23:30:00Z",
+  "title": "Design System: Crosswalk",
+  "extensions": {
+    "colorMeta": {
+      "rubric": {
+        "role": "primary",
+        "displayName": "Rubric",
+        "canonical": "#b3261e",
+        "tonalRamp": [
+          "#3a0b08",
+          "#5e120e",
+          "#8c1c16",
+          "#b3261e",
+          "#cf4a41",
+          "#e2807a",
+          "#f1b9b5",
+          "#fbe9e7"
+        ]
+      },
+      "rubric-deep": {
+        "role": "primary",
+        "displayName": "Rubric Deep",
+        "canonical": "#8c1c16",
+        "tonalRamp": [
+          "#2e0806",
+          "#4d0e0b",
+          "#6e1511",
+          "#8c1c16",
+          "#ad3d36",
+          "#cb7770",
+          "#e6b3ae",
+          "#f8e6e4"
+        ]
+      },
+      "rubric-wash": {
+        "role": "primary",
+        "displayName": "Rubric Wash",
+        "canonical": "#fbe9e7",
+        "tonalRamp": [
+          "#3d0f0b",
+          "#6a1d17",
+          "#983028",
+          "#c1564d",
+          "#dc8a83",
+          "#edb8b3",
+          "#f6d6d2",
+          "#fbe9e7"
+        ]
+      },
+      "live": {
+        "role": "secondary",
+        "displayName": "Live Green",
+        "canonical": "#2a6a3c",
+        "tonalRamp": [
+          "#0e2616",
+          "#1a4426",
+          "#2a6a3c",
+          "#3f8a54",
+          "#66a878",
+          "#96c5a3",
+          "#c4dfcb",
+          "#eaf4ec"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f7f6f2",
+        "tonalRamp": [
+          "#23221d",
+          "#3d3b34",
+          "#59564d",
+          "#7a766b",
+          "#9d998d",
+          "#c1bdb1",
+          "#e2dfd6",
+          "#f7f6f2"
+        ]
+      },
+      "leaf": {
+        "role": "neutral",
+        "displayName": "Leaf",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#1f1f1f",
+          "#3b3b3b",
+          "#5c5c5c",
+          "#7f7f7f",
+          "#a3a3a3",
+          "#c7c7c7",
+          "#e8e8e8",
+          "#ffffff"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1b1b1b",
+        "tonalRamp": [
+          "#1b1b1b",
+          "#333333",
+          "#4d4d4d",
+          "#6b6b6b",
+          "#8a8a8a",
+          "#ababab",
+          "#cfcfcf",
+          "#f0f0f0"
+        ]
+      },
+      "ink-hover": {
+        "role": "neutral",
+        "displayName": "Ink Hover",
+        "canonical": "#3a3a3a",
+        "tonalRamp": [
+          "#1b1b1b",
+          "#2a2a2a",
+          "#3a3a3a",
+          "#575757",
+          "#7a7a7a",
+          "#a1a1a1",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "mute": {
+        "role": "neutral",
+        "displayName": "Mute",
+        "canonical": "#5f646b",
+        "tonalRamp": [
+          "#1c1f22",
+          "#33383d",
+          "#4a5057",
+          "#5f646b",
+          "#80858c",
+          "#a4a8ae",
+          "#c9ccd0",
+          "#eeeff1"
+        ]
+      },
+      "hair": {
+        "role": "neutral",
+        "displayName": "Hair",
+        "canonical": "#d6d3c9",
+        "tonalRamp": [
+          "#26241d",
+          "#423f35",
+          "#5f5b4f",
+          "#7f7b6d",
+          "#a09c8e",
+          "#bdb9ad",
+          "#d6d3c9",
+          "#f0eee8"
+        ]
+      },
+      "wash": {
+        "role": "neutral",
+        "displayName": "Wash",
+        "canonical": "#efede6",
+        "tonalRamp": [
+          "#25231c",
+          "#403d33",
+          "#5d5a4d",
+          "#7d796b",
+          "#a09c8d",
+          "#c3bfb1",
+          "#e0ddd3",
+          "#efede6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The one page title on list and form pages."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "The heading of a bordered panel."
+      },
+      "subtitle": {
+        "displayName": "Subtitle",
+        "purpose": "Section headings above a double rule, the wordmark, and project names in a list."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, capped at 62ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Buttons, field labels, hints, metadata, and navigation links."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Card counts, canvas footnotes, and the italic type label at the end of a column row."
+      },
+      "verbatim-name": {
+        "displayName": "Verbatim Name",
+        "purpose": "Dataset names in card headers and column names in entries."
+      },
+      "verbatim": {
+        "displayName": "Verbatim",
+        "purpose": "One column name per 30px card row."
+      },
+      "verbatim-code": {
+        "displayName": "Verbatim Code",
+        "purpose": "The device code shown for confirmation."
+      }
+    },
+    "shadows": [
+      {
+        "name": "leaf",
+        "value": "0 1px 0 rgb(27 27 27 / 0.08), 0 14px 28px -18px rgb(27 27 27 / 0.45)",
+        "purpose": "A dataset card at rest on the canvas."
+      },
+      {
+        "name": "lifted",
+        "value": "0 1px 0 rgb(27 27 27 / 0.1), 0 22px 36px -18px rgb(27 27 27 / 0.55)",
+        "purpose": "A card while it is dragged, and the open column entry."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The one easing curve, for colour changes and the card arrival."
+      },
+      {
+        "name": "state-change",
+        "value": "150ms",
+        "purpose": "Background, border, and text colour changes on hover and press."
+      },
+      {
+        "name": "lift",
+        "value": "200ms",
+        "purpose": "The shadow change when a card is picked up or put down."
+      },
+      {
+        "name": "fit",
+        "value": "300ms",
+        "purpose": "The canvas moving to bring cards into view."
+      },
+      {
+        "name": "card-arrive",
+        "value": "420ms cubic-bezier(0.16, 1, 0.3, 1) both",
+        "purpose": "A card sent from the terminal is revealed from its top edge. Off under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action of a view: create, log in, link.",
+      "html": "<button class=\"ds-btn-primary\">Create project</button>",
+      "css": ".ds-btn-primary { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--color-ink, #1b1b1b); border-radius: 0; background: var(--color-ink, #1b1b1b); color: var(--color-leaf, #ffffff); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #3a3a3a; } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; } .ds-btn-primary:active { background: #000; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The default button, and the one that keeps things as they are beside a danger button.",
+      "html": "<button class=\"ds-btn-secondary\">Try again</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--color-ink, #1b1b1b); border-radius: 0; background: var(--color-leaf, #ffffff); color: var(--color-ink, #1b1b1b); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-secondary:hover { background: var(--color-wash, #efede6); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; } .ds-btn-secondary:disabled { opacity: 0.55; cursor: not-allowed; } .ds-btn-secondary:active { background: var(--color-hair, #d6d3c9); }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Carries out a deletion or unlinking that was already asked for.",
+      "html": "<button class=\"ds-btn-danger\">Delete project</button>",
+      "css": ".ds-btn-danger { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--color-rubric, #b3261e); border-radius: 0; background: var(--color-rubric, #b3261e); color: var(--color-leaf, #ffffff); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-danger:hover { background: var(--color-rubric-deep, #8c1c16); border-color: var(--color-rubric-deep, #8c1c16); } .ds-btn-danger:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; } .ds-btn-danger:disabled { opacity: 0.55; cursor: not-allowed; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "A labelled text field with a hint below.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field-label\" for=\"ds-field-input\">Password</label><input id=\"ds-field-input\" class=\"ds-field-input\" type=\"password\" /><p class=\"ds-field-hint\">At least 8 characters.</p></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; max-width: 20rem; font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); } .ds-field-label { font-size: 0.8125rem; font-weight: 600; color: var(--color-ink, #1b1b1b); } .ds-field-input { min-height: 44px; padding: 0 12px; border: 1px solid var(--color-ink, #1b1b1b); border-radius: 0; background: var(--color-leaf, #ffffff); color: var(--color-ink, #1b1b1b); font: inherit; font-size: 0.9375rem; caret-color: var(--color-rubric, #b3261e); } .ds-field-input:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; } .ds-field-input[aria-invalid='true'] { border-color: var(--color-rubric, #b3261e); } .ds-field-hint { margin: 0; font-size: 0.8125rem; color: var(--color-mute, #5f646b); }"
+    },
+    {
+      "name": "Problem Box",
+      "kind": "custom",
+      "refersTo": "problem",
+      "description": "An error, said plainly, with what to do about it.",
+      "html": "<p class=\"ds-problem\" role=\"alert\">That email and password do not match an account. Check both and try again.</p>",
+      "css": ".ds-problem { margin: 0; padding: 10px 12px; border: 1px solid var(--color-rubric, #b3261e); background: var(--color-rubric-wash, #fbe9e7); color: var(--color-rubric-deep, #8c1c16); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); font-size: 0.8125rem; font-weight: 500; }"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": "top-bar",
+      "description": "Wordmark, project name, live status, and account links, closed by a 2px ink rule.",
+      "html": "<header class=\"ds-topbar\"><a class=\"ds-topbar-mark\" href=\"#\">Crosswalk</a><div class=\"ds-topbar-place\"><span aria-hidden=\"true\">/</span><strong>Supplier litigation panel</strong></div><p class=\"ds-topbar-live\"><span class=\"ds-topbar-dot\" aria-hidden=\"true\"></span>Live</p><a class=\"ds-topbar-link\" href=\"#\">Projects</a><a class=\"ds-topbar-link\" href=\"#\">Linked devices</a><a class=\"ds-topbar-link\" href=\"#\">Log out</a></header>",
+      "css": ".ds-topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; min-height: 56px; padding: 8px 24px; border-bottom: 2px solid var(--color-ink, #1b1b1b); background: var(--color-leaf, #ffffff); color: var(--color-ink, #1b1b1b); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); } .ds-topbar-mark { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.025em; color: inherit; text-decoration: none; } .ds-topbar-place { display: flex; flex: 1; gap: 8px; min-width: 0; font-size: 0.9375rem; color: var(--color-mute, #5f646b); } .ds-topbar-place strong { color: var(--color-ink, #1b1b1b); font-weight: 700; } .ds-topbar-live { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.8125rem; } .ds-topbar-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-live, #2a6a3c); } .ds-topbar-link { font-size: 0.8125rem; font-weight: 500; color: inherit; text-decoration: none; text-underline-offset: 4px; } .ds-topbar-link:hover { text-decoration: underline; } .ds-topbar-link:focus-visible, .ds-topbar-mark:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Dataset Card",
+      "kind": "card",
+      "refersTo": "dataset-card",
+      "description": "One page of the codebook: file name, double rule, then one row per column joined to its type by a leader.",
+      "html": "<article class=\"ds-card\"><header class=\"ds-card-head\"><div class=\"ds-card-id\"><h2 class=\"ds-card-name\">firms.csv</h2><p class=\"ds-card-meta\">12,415 rows, 6 columns <span aria-hidden=\"true\">/</span> CSV</p></div><button class=\"ds-card-remove\" aria-label=\"Remove firms.csv from the canvas\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\" fill=\"none\"><path d=\"M3.5 3.5l9 9m0-9l-9 9\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg></button></header><ul class=\"ds-card-rows\"><li><button class=\"ds-card-row\"><span class=\"ds-card-col\">firm_id</span><span class=\"ds-card-leader\" aria-hidden=\"true\"></span><span class=\"ds-card-type\">Text</span></button></li><li><button class=\"ds-card-row ds-card-row-active\"><span class=\"ds-card-col\">ticker</span><span class=\"ds-card-leader\" aria-hidden=\"true\"></span><span class=\"ds-card-type\">Text</span></button></li><li><button class=\"ds-card-row\"><span class=\"ds-card-col\">first_year</span><span class=\"ds-card-leader\" aria-hidden=\"true\"></span><span class=\"ds-card-type\">Whole number</span></button></li></ul></article>",
+      "css": ".ds-card { width: 304px; padding-bottom: 10px; border: 1px solid var(--color-ink, #1b1b1b); background: var(--color-leaf, #ffffff); color: var(--color-ink, #1b1b1b); box-shadow: 0 1px 0 rgb(27 27 27 / 0.08), 0 14px 28px -18px rgb(27 27 27 / 0.45); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); } .ds-card-head { display: flex; align-items: flex-start; gap: 8px; height: 68px; box-sizing: border-box; padding: 10px 14px 0; border-bottom: 3px double var(--color-ink, #1b1b1b); } .ds-card-id { flex: 1; min-width: 0; } .ds-card-name { margin: 0; font-family: var(--font-mono, 'Courier Prime', 'Courier New', monospace); font-size: 0.9375rem; line-height: 1.5rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-card-meta { margin: 0; font-size: 0.75rem; line-height: 1.25rem; color: var(--color-mute, #5f646b); } .ds-card-meta span { margin: 0 6px; } .ds-card-remove { display: grid; place-items: center; width: 28px; height: 28px; margin-right: -6px; border: 0; background: transparent; color: var(--color-mute, #5f646b); cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-card-remove:hover { background: var(--color-wash, #efede6); color: var(--color-ink, #1b1b1b); } .ds-card-remove:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; } .ds-card-rows { margin: 0; padding: 0; list-style: none; } .ds-card-row { display: flex; align-items: baseline; width: 100%; height: 30px; padding: 0 14px; border: 0; background: transparent; color: inherit; text-align: left; font: inherit; } .ds-card-row:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: -2px; } .ds-card-col { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono, 'Courier Prime', 'Courier New', monospace); font-size: 0.8125rem; line-height: 30px; } .ds-card-leader { flex: 1 1 1.5rem; min-width: 1.5rem; margin: 0 0.5rem; border-bottom: 1px dotted var(--color-mute, #5f646b); transform: translateY(-0.28em); } .ds-card-type { flex-shrink: 0; font-size: 0.75rem; font-style: italic; color: var(--color-mute, #5f646b); } .ds-card-row:hover, .ds-card-row-active { background: var(--color-rubric-wash, #fbe9e7); color: var(--color-rubric-deep, #8c1c16); } .ds-card-row:hover .ds-card-type, .ds-card-row-active .ds-card-type { color: var(--color-rubric-deep, #8c1c16); }"
+    },
+    {
+      "name": "Column Entry",
+      "kind": "custom",
+      "refersTo": "column-entry",
+      "description": "The codebook entry that opens beside the active column: name, what the values look like, and two measures on leaders.",
+      "html": "<aside class=\"ds-entry\"><p class=\"ds-entry-name\">ticker</p><p class=\"ds-entry-shape\">Text, 1 to 5 characters, all uppercase.</p><dl class=\"ds-entry-list\"><div class=\"ds-entry-row\"><dt>Empty cells</dt><span class=\"ds-entry-leader\" aria-hidden=\"true\"></span><dd>12%</dd></div><div class=\"ds-entry-row\"><dt>Different values</dt><span class=\"ds-entry-leader\" aria-hidden=\"true\"></span><dd>10,890</dd></div></dl></aside>",
+      "css": ".ds-entry { width: 256px; box-sizing: border-box; padding: 10px 14px 12px; border: 1px solid var(--color-ink, #1b1b1b); border-top: 3px solid var(--color-rubric, #b3261e); background: var(--color-leaf, #ffffff); color: var(--color-ink, #1b1b1b); box-shadow: 0 1px 0 rgb(27 27 27 / 0.1), 0 22px 36px -18px rgb(27 27 27 / 0.55); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); font-size: 0.8125rem; font-variant-numeric: tabular-nums; } .ds-entry-name { margin: 0; font-family: var(--font-mono, 'Courier Prime', 'Courier New', monospace); font-size: 0.9375rem; line-height: 1.5rem; font-weight: 700; word-break: break-all; } .ds-entry-shape { margin: 4px 0 0; } .ds-entry-list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--color-hair, #d6d3c9); } .ds-entry-row { display: flex; align-items: baseline; } .ds-entry-row dt { flex-shrink: 0; color: var(--color-mute, #5f646b); } .ds-entry-row dd { margin: 0; text-align: right; } .ds-entry-leader { flex: 1 1 1.5rem; min-width: 1.5rem; margin: 0 0.5rem; border-bottom: 1px dotted var(--color-mute, #5f646b); transform: translateY(-0.28em); }"
+    },
+    {
+      "name": "Command",
+      "kind": "custom",
+      "refersTo": "command",
+      "description": "A terminal command to copy, set verbatim in Courier Prime.",
+      "html": "<div class=\"ds-command\"><code class=\"ds-command-text\">crosswalk login</code><button class=\"ds-command-copy\" aria-label=\"Copy the command crosswalk login\">Copy</button></div>",
+      "css": ".ds-command { display: flex; align-items: stretch; max-width: 26rem; border: 1px solid var(--color-ink, #1b1b1b); background: var(--color-paper, #f7f6f2); } .ds-command-text { flex: 1; padding: 8px 12px; overflow-x: auto; white-space: nowrap; font-family: var(--font-mono, 'Courier Prime', 'Courier New', monospace); font-size: 0.9375rem; color: var(--color-ink, #1b1b1b); } .ds-command-copy { width: 72px; flex-shrink: 0; padding: 0 12px; border: 0; border-left: 1px solid var(--color-ink, #1b1b1b); background: var(--color-leaf, #ffffff); color: var(--color-ink, #1b1b1b); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background-color 150ms; } .ds-command-copy:hover { background: var(--color-wash, #efede6); } .ds-command-copy:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Leader Row",
+      "kind": "custom",
+      "refersTo": "column-row",
+      "description": "A list row that joins a name to its facts with a dotted leader, as in the projects list.",
+      "html": "<div class=\"ds-leadrow\"><a class=\"ds-leadrow-name\" href=\"#\">Supplier litigation panel</a><span class=\"ds-leadrow-leader\" aria-hidden=\"true\"></span><span class=\"ds-leadrow-value\">5 datasets, changed 2 hours ago</span></div>",
+      "css": ".ds-leadrow { display: flex; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--color-hair, #d6d3c9); font-family: var(--font-sans, 'Libre Franklin', system-ui, sans-serif); font-variant-numeric: tabular-nums; } .ds-leadrow-name { min-width: 0; font-size: 1.0625rem; font-weight: 700; color: var(--color-ink, #1b1b1b); text-decoration: none; text-underline-offset: 4px; } .ds-leadrow-name:hover { text-decoration: underline; } .ds-leadrow-name:focus-visible { outline: 2px solid var(--color-ink, #1b1b1b); outline-offset: 2px; } .ds-leadrow-leader { flex: 1 1 1.5rem; min-width: 1.5rem; margin: 0 0.5rem; border-bottom: 1px dotted var(--color-mute, #5f646b); transform: translateY(-0.28em); } .ds-leadrow-value { flex-shrink: 0; font-size: 0.8125rem; color: var(--color-mute, #5f646b); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Codebook",
+    "overview": "A dataset card is a page of a codebook: variable name, dotted leader, type. The whole interface is set the way printed data documentation is set, on warm paper, in ink, with one red rubric. It is flat, ruled, and square, and it reads as a document a researcher already knows how to read.\n\nThe system is quiet and dense where the data is, and plain and roomy where the instructions are. Two typefaces split the world in two: Courier Prime is the user's own material quoted exactly, and Libre Franklin is Crosswalk speaking. That split is how the interface shows what was read from the user's machine and what was not.\n\nThe system refuses the grey dotted node-editor canvas with rounded cards and a blue accent. The canvas is unmarked paper, cards are white leaves with ink borders, and nothing is blue.",
+    "keyCharacteristics": [
+      "Paper ground, white leaves, ink rules, one red rubric.",
+      "Square corners everywhere, 1px ink borders, a 3px double rule under every heading that opens a list or a panel.",
+      "A dotted leader wherever a label meets its value.",
+      "Courier Prime for anything verbatim from the user's files or terminal, Libre Franklin for everything else.",
+      "Shadow only on things that move or open above the paper.",
+      "Tabular numerals throughout."
+    ],
+    "rules": [
+      {
+        "name": "The Rubric Rule",
+        "body": "Rubric means one of three things: the active column, an error, or a destructive action. It is never decoration, never a brand accent, and never the focus ring.",
+        "section": "colors"
+      },
+      {
+        "name": "The Live Rule",
+        "body": "Green appears only as the dot of the live connection state. When the connection drops the dot becomes a hollow Mute ring and the word changes to \"Reconnecting\", so the state never rests on colour alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Verbatim Rule",
+        "body": "Courier Prime means \"copied exactly from the user's files or terminal\": dataset names, column names, commands, the device code, and device host names. Everything else is Libre Franklin, including the wordmark and project names.",
+        "section": "typography"
+      },
+      {
+        "name": "The Untouched Name Rule",
+        "body": "Column and dataset names are never uppercased, title-cased, or otherwise altered. A name too long for its row is truncated with an ellipsis and shown whole in its entry. A blank name is shown as \"(no name)\".",
+        "section": "typography"
+      },
+      {
+        "name": "The Italic Type Rule",
+        "body": "A column's type is set in italic Libre Franklin at the end of the leader, in Mute. Italic is not used for emphasis anywhere else.",
+        "section": "typography"
+      },
+      {
+        "name": "The Loose Leaf Rule",
+        "body": "Shadow belongs only to draggable cards and the open column entry. Static panels, forms, lists, error boxes, and the top bar have none.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Double Rule Rule",
+        "body": "A card header, a panel heading, and a section heading that opens a list all end in the same 3px double Ink rule. A single Hair rule is for divisions inside what the double rule opened.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Leader Rule",
+        "body": "Wherever a label meets a value on one line they are joined by a dotted leader: column name to type, measure to figure, project to its count and date.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do set anything copied from the user's files or terminal in Courier Prime, exactly as it was written.",
+      "Do join a label to its value with the dotted leader whenever they share a line.",
+      "Do close every card header, panel heading, and list heading with the 3px double Ink rule.",
+      "Do keep every box square with a 1px Ink border.",
+      "Do use the 2px Ink outline, offset 2px, for focus on every control.",
+      "Do keep row height at 30px and card width at 304px, taken from the shared layout constants.",
+      "Do make a destructive action a two-step: a text link or icon first, then a Rubric button beside a button that keeps things as they are.",
+      "Do write copy in plain sentences with no em dashes.",
+      "Do pair every colour state with a word or shape change."
+    ],
+    "donts": [
+      "Don't use Rubric for anything except the active column, an error, or a destructive action.",
+      "Don't use green for anything except the live status dot.",
+      "Don't uppercase, title-case, or otherwise alter a column or dataset name.",
+      "Don't set the wordmark, project names, or interface text in Courier Prime.",
+      "Don't round a corner. The live status dot is the only round shape.",
+      "Don't put a shadow on a static panel, form, list, or message.",
+      "Don't draw a grid, dots, or any pattern on the canvas. It is plain Paper.",
+      "Don't add a blue accent or a second accent colour.",
+      "Don't show a cell value anywhere. Cards and entries hold names and profiles only."
+    ]
+  }
+}

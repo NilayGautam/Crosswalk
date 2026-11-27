@@ -1,0 +1,20 @@
+node_modules/
+.next/
+out/
+dist/
+.data/
+.env
+.env.local
+*.tsbuildinfo
+test-results/
+playwright-report/
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.DS_Store
+.crosswalk/
+next-env.d.ts
+# Written by next dev on every run.
+apps/web/AGENTS.md
