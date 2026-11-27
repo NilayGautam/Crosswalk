@@ -3,7 +3,7 @@
 ## Why this exists
 
 Crosswalk exists to replace the routine part of a research assistant's job.
-A researcher describes what they want done to their datasets, confirms a plan they can see, and gets the finished file, without writing code and without waiting on an RA.
+A researcher describes the file they want, confirms a plan they can see, and gets that file, without writing code and without waiting on an RA.
 
 The name comes from the field itself.
 A crosswalk is the table that maps one dataset's identifiers onto another's, and building those is most of the job.
@@ -28,7 +28,7 @@ The judgment is what takes an RA's time, and it is what Crosswalk has to carry:
 - Relationships are only valid in certain years.
 - Paid AI calls must be cached, resumable, and estimated before any money is spent.
 - Nobody should trust an AI match until its accuracy has been measured on a sample.
-- Some columns are licensed or private, and must be hidden or disguised before anything is shared.
+- Some data is licensed or private, and must not be sent anywhere without the user saying so.
 - Raw inputs are never overwritten, and every output can say exactly how it was made.
 
 ## Who it is for
@@ -36,48 +36,76 @@ The judgment is what takes an RA's time, and it is what Crosswalk has to carry:
 - **First:** my professor and me.
   The goal is reached when my professor finishes a real request without contacting me.
 - **Then:** our research group.
-- **Finally:** any researcher, as a public product with sign-up and billing.
+- **Finally:** any researcher, as a paid product.
+  What people pay for is the simplicity: no code, no API plumbing, one command.
 
 Users range from people who have never opened a terminal to people who want to read every line of the script.
 Crosswalk must serve both without asking either to configure anything.
 
 ## How it works
 
-1. **Install the CLI and link it.**
-   The user installs one command line tool and links it to their web account once.
-2. **Open a terminal in the data folder and run `crosswalk`.**
-   The CLI reads each dataset's column headers and a local profile of each column, and sends them to the web session.
-3. **See the datasets as cards on a canvas.**
-   Each card lists the dataset's columns.
-   The user marks which columns are open, pseudonymous, or hidden.
-4. **Describe the task, in any order, by drawing or by chatting.**
-   The user can draw an arrow from one column to another and pick what it means.
-   The user can also type what they want and never draw anything.
-   The chat can ask about arrows, suggest new ones, and draw them itself.
-5. **Confirm the plan.**
-   Anything the AI inferred appears as a dashed, proposed step with a plain-language explanation.
-   Nothing runs until the user confirms it.
-6. **Review the estimate.**
-   Before any paid AI call, the CLI shows the estimated run time and API cost, computed locally from the real row counts.
-7. **Run.**
-   The confirmed script is sent to the CLI, which already has everything needed to run it.
-   If the script needs an AI model, the CLI asks for the user's own API key and keeps it on their machine.
-8. **Get the output.**
-   The constructed file and a manifest that records how the output was made.
-9. **Get the accuracy audit.**
-   When a run used AI matching, an audit starts on its own when the run finishes and reports how accurate the matches are.
+1. **Install once and make an account.**
+2. **Put the input files in a folder, open a terminal there, and run `crosswalk`.**
+   This is the only thing ever typed in a terminal.
+   The command stays running and does the rest of its work when the website asks it to.
+3. **The browser opens.**
+   The user logs in if needed, picks or creates a project, and sees the files that were found with every column name.
+   Nothing is sent until the user approves it there.
+4. **The datasets appear as cards on the canvas.**
+5. **The user describes the output file, in any order, by drawing lines or by chatting.**
+6. **The user confirms the plan.**
+   Anything the AI proposed is dashed until it is accepted.
+7. **The user reviews the estimate.**
+   Run time, AI cost, exactly which columns each AI step would send, and which accuracy audit to run.
+8. **Run.**
+   The waiting command builds the file on the user's own machine.
+9. **The output file appears in the folder**, with a record of how it was made and, when AI matching was used, its accuracy.
 
 ## Core ideas
+
+### One canvas, one output
+
+A project is one canvas, and a canvas leads to exactly one output file.
+A second deliverable is a second project, which can use the same datasets.
+
+### The output area
+
+The output file is not a card and cannot be dragged.
+It is a fixed area the whole canvas leads into, and it reads as a description of the file:
+
+- **Its columns**, in order.
+- **What one row is**, for example one row per case, or one row per firm per year.
+- **Which rows are kept**, for example only S&P 500 firms.
+
+The user thinks about the file they want, not about a sequence of operations.
+
+### Lines
+
+There are two kinds of line, and both are numbered and colour coded.
+
+| Line        | Connects                                     | Says                                       | Drawn                            |
+| ----------- | -------------------------------------------- | ------------------------------------------ | -------------------------------- |
+| Match line  | A column on one card to a column on another  | These two columns identify the same thing. | Always.                          |
+| Output line | A column on a card to a column in the output | This column is in the file.                | For the column being pointed at. |
+
+Each match gets a number and a colour.
+Every output column wears the number and colour of the match it came through, so a glance at the output area shows where each column came from.
+Output lines are not all drawn at once, because a file with fifty columns would bury the canvas.
+
+A column that comes from no dataset, such as a formula or a column an AI step fills in, starts in the output area.
+
+Lines the AI proposes are dashed until the user accepts them.
 
 ### One plan, two editors
 
 The canvas and the chat both edit the same plan.
 The plan is structured data, not a picture, so the canvas never has to be interpreted by an AI.
-AI is used to suggest steps and to understand what the user typed, and every suggestion lands in the plan as a proposal the user can see.
+The chat can ask about lines, propose new ones, and draw them itself.
+A user who never wants to draw can describe the whole file in words.
 
 ### Match kinds
 
-Every arrow that links two columns has a match kind, chosen first, and an optional note describing the nuance.
+Every match line has a kind, chosen first, and an optional note describing the nuance.
 
 | Match kind    | When to use it                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------- |
@@ -85,82 +113,99 @@ Every arrow that links two columns has a match kind, chosen first, and an option
 | Normalized ID | The same identifier in different formats, checked against a second field to catch collisions. |
 | Name match    | Company, person, or organization names that are written differently.                          |
 | Time-aware    | The link only holds in certain years or within a window around a date.                        |
-| Custom        | Anything else, described in the user's own words.                                             |
 
-Each built-in match kind is a tested recipe, not code written fresh by an AI each time.
-A name match always runs the same way: clean the names, match exactly where possible, retrieve a short list of candidates for the rest, let the AI pick only from that list, and cache every answer.
+### Templates, not generated code
+
+Crosswalk is deterministic.
+Every step of a plan is carried out by a tested template, and no code written by an AI is ever run.
+
+An AI may shape a plan in exactly three ways:
+
+- **Settings.**
+  Which template, which columns, which match kind, which rule.
+- **Formulas.**
+  A computed column is written as a formula, like one in a spreadsheet, that the user can read.
+- **Prompts.**
+  The instructions an AI matching or classifying step is given, including the user's nuance note.
+
+The same plan always produces the same script.
+When no template fits a request, Crosswalk says so plainly, does the part it can, and records the request so a template can be added.
 
 ### Every row gets an answer
 
-A match recipe ends with one of two answers for each row: a match, or no match.
+A match ends with one of two answers for each row: a match, or no match.
 There is no uncertain pile and no approval step.
 The AI's confidence is kept as a column, so a user can filter on it later, but it holds nothing back.
-Experience on the Lex Machina work showed that human approval queues cost far more time than they were worth.
 
 ### Accuracy audits
 
 Trust comes from measuring, not from approving.
-When a run that used AI matching finishes, an audit runs automatically on a random sample of the results and reports the accuracy.
+When a run that used AI matching finishes, an audit checks a random sample of the results and reports the accuracy.
+The user chooses the audit each time, on the estimate screen, with its cost shown.
 
 | Audit   | Sample                          | Checked by                             |
 | ------- | ------------------------------- | -------------------------------------- |
 | Deep    | 10% of the matches, up to 100   | A strong AI model                      |
 | Wide    | 20% of the matches, up to 1,000 | A fast, cheap AI model                 |
+| Custom  | A share and a cap the user sets | A model the user picks                 |
 | By hand | A sample size the user picks    | The user, filling in a verdict per row |
-| Off     | None                            | Nobody                                 |
+| None    | None                            | Nobody                                 |
 
 - The sample is random with a fixed seed, so the same audit can be drawn again.
 - It is drawn from separate groups: matches the AI chose, matches made by exact rules, and rows left unmatched.
   Sampling the unmatched rows is what catches matches the AI missed.
 - The AI judge is a different model from the one that made the matches whenever possible.
-- The report gives the share of matches that are right, the share of unmatched rows that should have matched, and a list of every disagreement.
-- A report from an AI judge is labeled as AI-judged.
-  Only a by-hand audit is called measured accuracy.
+- The result is called accuracy, and the report always says which audit produced it.
 - Audit results are never fed back into the run that was audited.
-  Tuning on the audit sample would make the number meaningless.
 
-### Privacy marks
+### Confidential data
 
-Every column has one of three marks.
+The files never leave the user's machine.
+The website only ever receives file names, column names, and a profile of each column.
 
-| Mark         | What it means                                                                                                                          |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Open         | Values may be sent to Crosswalk and to AI models.                                                                                      |
-| Pseudonymous | Each value is replaced by a stable token before it leaves the machine. The same value always gets the same token, so joins still work. |
-| Hidden       | Values never leave the machine. Used for columns that need no processing or must stay private.                                         |
+Cell values go to exactly one place, and only when the user says so: an AI provider, during an AI step.
+Before any AI step runs, Crosswalk shows exactly which columns it would send and asks.
 
-When a dataset is added, the CLI asks one question: may values from this dataset be shared?
-Yes makes every column open, and no makes every column hidden.
-The user then changes individual columns on the canvas.
-The key that turns tokens back into values stays on the user's machine.
+- A column marked **confidential** is never sent.
+  An AI step that needs it cannot run until the user removes the mark.
+- A dataset can be marked confidential when it is added, which marks every one of its columns.
+- A column can be sent **as tokens** instead of as values, when a step only needs to know which rows are the same.
+  The key that turns tokens back into values stays on the user's machine.
+
+### AI keys live on the account
+
+A user adds their own key for each AI provider once, in their account, and it works on every project.
+Crosswalk only offers the models of providers the user has added a key for.
+Later, users will be able to buy credits instead and never handle a key.
 
 ### Language is inferred, not asked
 
-Scripts can be generated for more than one language.
+Scripts can be produced for more than one language.
 Crosswalk infers the right one from how the user talks and what they ask for.
 A non-technical user is never asked and never told, and gets the default.
 
 ## Principles
 
-- **The user decides what leaves the machine.**
-  Data may be shared when no license or privacy rule forbids it, and the privacy marks are how the user says so.
-  A hidden column's values are never sent, and a pseudonymous column is only ever sent as tokens.
-- **Measure, do not approve.**
-  No human approval queues.
-  Every AI matching run ends with an accuracy audit unless the user turns it off.
+- **One terminal action.**
+  Open the folder, run `crosswalk`, and never type in the terminal again.
+- **The files stay on the user's machine.**
+  Values leave only for an AI step, only for the columns shown, and only after the user agrees.
+- **Deterministic.**
+  Templates, settings, formulas, and prompts.
+  Never generated code.
 - **Confirm before run.**
   No step executes that the user has not seen and accepted.
 - **Deterministic before fuzzy before AI.**
   Exact matches come first.
   AI chooses from candidates it is shown and never invents an identifier.
+- **Measure, do not approve.**
+  No human approval queues.
 - **Raw inputs are never overwritten.**
   Every output goes to a new file in a new folder.
 - **No surprise spending.**
   Time and cost are estimated from real counts before any paid call, and paid answers are cached so an interrupted run resumes for free.
 - **Reproducible.**
-  Every output has a manifest with input hashes, the plan, recipe versions, the model used, and the cost.
-- **Tested recipes over generated code.**
-  The more of a script that comes from the tested runtime, and the less that is written fresh, the better.
+  Every output has a record with input hashes, the plan, template versions, the models used, and the cost.
 - **Simple for the least technical user.**
   If my professor needs me to explain a screen, the screen is wrong.
 
@@ -168,15 +213,16 @@ A non-technical user is never asked and never told, and gets the default.
 
 - Not a data warehouse or a hosting service for datasets.
 - Not a spreadsheet or a general notebook.
-- Not a place to edit cell values on the web.
-- No scraping or crawling of external sources in v1.
+- Not a place to edit cell values.
+- No code written by an AI at run time.
 - No uncertain piles, review queues, or approval columns.
+- No scraping or crawling of external sources.
 
 ## Success looks like
 
 - My professor completes a real join, enrichment, or panel request from start to finish without contacting me.
-- A script that Crosswalk produces for a task I have already done by hand gives the same output as my hand-written pipeline.
-- No value from a hidden column ever leaves the user's machine, and no pseudonymous value leaves as anything but a token.
-- Every AI matching run reports an accuracy number, and a by-hand audit of the same run agrees with it.
+- A plan that reproduces a task I have already done by hand gives the same output as my hand-written pipeline.
+- The same plan run twice produces the same script and the same output.
+- No cell value ever leaves the user's machine except for an AI step the user approved, column by column.
 - The cost estimate shown before a run is within a small margin of the actual cost.
 - A new user goes from install to a first output file in under fifteen minutes.

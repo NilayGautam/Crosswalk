@@ -4,36 +4,38 @@
 
 - Crosswalk is its own project.
   Its stack was chosen to match the one I already know from nilaygautam.com, and it depends on nothing in that site.
-- v1 runs entirely on one laptop, started with one command, with nothing to install beyond Node and the CLI.
+- It is a hosted web app with accounts, plus a command line tool on the user's machine.
+  Until the deployment phase, the whole thing runs on one laptop, started with one command.
 - Favor quality, simplicity, robustness, and long term maintainability over development speed.
 - Nothing runs 24/7.
   Every server-side workload scales to zero.
 - Each side uses the language its ecosystem is best at: TypeScript for the web, Python for the CLI and the data work.
-- Prefer tested recipes to generated code, and deterministic code to AI calls.
+- Deterministic by construction.
+  Tested templates do the work, and no generated code is ever run.
 
 ## System overview
 
 ```
  Browser                       Crosswalk server                 User's machine
  ---------------------         ----------------------           ---------------------------
- Canvas  <-- one Plan -->      Plan store                       crosswalk CLI
- Chat                          AI planning and suggestions      - reads headers and profiles
-                               Script compiler                  - applies the privacy marks
-                               Audit reports                    - runs scripts in its own Python
-        <--- schema cards, plan, script, status, audits --->    - holds the user's AI key
-                                                                - holds the pseudonym key
+ Canvas  <-- one Plan -->      Accounts and projects            crosswalk CLI (stays running)
+ Chat                          Plan store                       - reads headers and profiles
+ Output area                   AI planning and suggestions      - compiles the Plan with templates
+ Estimate and consent          AI keys, encrypted               - runs the script in its own Python
+                                                                - calls AI providers directly
+        <-- schema cards, plan, run requests, status, results -->   - files never leave here
 ```
 
 There are three parts.
 
 1. **Web app.**
-   The canvas, the chat, accounts, and saved projects.
+   The canvas, the chat, the output area, accounts, and saved projects.
 2. **Server.**
-   Stores plans, talks to the AI models that help build a plan, and compiles a confirmed plan into a script.
+   Stores accounts, projects, Plans, and the user's AI keys.
+   Talks to the AI models that help build a Plan.
 3. **CLI.**
-   Runs on the user's machine, in the folder with the datasets.
-   It reads the files, applies the privacy marks, and runs the scripts.
-   Nothing reaches the server or an AI model without passing through it.
+   One long-running command on the user's machine, in the folder with the datasets.
+   It is the only part that ever opens a file, and the only part that runs anything.
 
 ## Stack
 
@@ -42,13 +44,13 @@ There are three parts.
 | Web language          | TypeScript (strict)                                                                                    |
 | Web framework         | Next.js (App Router, React 19), built as a static export                                               |
 | Canvas                | React Flow (`@xyflow/react`)                                                                           |
-| Client state          | React Flow for the canvas in v1. Zustand holds the Plan from Phase 4.                                  |
-| Styling               | Tailwind CSS v4, with Crosswalk's own design tokens                                                    |
+| Client state          | Zustand, holding the Plan                                                                              |
+| Styling               | Tailwind CSS v4, with the tokens recorded in `apps/web/DESIGN.md`                                      |
 | API                   | Hono on Node, serving the API and the static web build from one process                                |
 | Validation            | Zod, with the Plan schema exported as JSON Schema for the CLI                                          |
 | Database              | Postgres with Drizzle: embedded PGlite on a laptop, hosted Postgres later                              |
 | Auth                  | Better Auth: email and password, Google sign-in, and the device authorization flow for linking the CLI |
-| Live updates          | Server-sent events from the Hono server to an open canvas                                              |
+| Live updates          | Server-sent events to an open canvas, and one long-lived connection from the server to a running CLI   |
 | Planning models       | Claude, through the Anthropic API                                                                      |
 | CLI language          | Python 3.12 or newer                                                                                   |
 | CLI distribution      | `uv`, installed by a one-line installer                                                                |
@@ -59,8 +61,8 @@ There are three parts.
 | Package manager       | pnpm for the web, uv for Python                                                                        |
 | Lint and format       | Biome for TypeScript, Ruff for Python                                                                  |
 | Unit tests            | Vitest for TypeScript, pytest for Python                                                               |
-| E2E tests             | Playwright for the web, and a full CLI run against synthetic data                                      |
-| Hosting               | None in v1. Decided in the deployment phase.                                                           |
+| E2E tests             | Playwright driving the real server, a real browser, and the real CLI                                   |
+| Hosting               | None yet. Decided in the deployment phase.                                                             |
 | CI/CD                 | GitHub Actions                                                                                         |
 
 ### Database
@@ -74,139 +76,227 @@ There are three parts.
 
 - Email and password works with no outside service.
 - Google sign-in is switched on by setting a Google OAuth client ID and secret.
-  Without them the Google button is not shown, so v1 works before those exist.
+  Without them the Google button is not shown.
 - An account signed up by email and the same email signing in through Google are one account.
 - A user has named **projects**.
-  Each project has one canvas, its datasets, and its saved card positions.
+  A project is one canvas, its datasets, its Plan, and its one output.
+
+### AI keys
+
+- A user adds one key per AI provider in their account settings.
+  Providers supported first: Anthropic, OpenAI, and TypeSafe.
+- Keys are encrypted at rest with a key that is not stored in the database.
+- A key is never sent to a browser after it is saved.
+  The account page shows only the provider and the last four characters.
+- For a run, the server hands the needed key to the user's own linked CLI over its authenticated connection.
+  The CLI holds it in memory for that run and never writes it to disk.
+- AI calls then go from the user's machine straight to the provider, so cell values never pass through Crosswalk's server.
+- The model registry offers only models from providers the user has a key for, and a plan that needs AI cannot be confirmed until one is added.
+- Later, credits will let a user skip keys altogether.
+  Credit calls are made through Crosswalk's server, which is the one case where values pass through it, and that needs its own privacy terms first.
 
 ## The Plan
 
 The Plan is the single source of truth.
-The canvas draws it, the chat edits it, and the compiler turns it into a script.
+The canvas draws it, the chat edits it, and the CLI compiles it into a script.
 
-- A Plan is a JSON document validated by one Zod schema.
-- It holds **datasets** (name, columns, types, profile) and **steps**.
-- Step kinds: `join`, `enrich`, `filter`, `reshape`, `aggregate`, `analyze`, `chart`, `custom`.
-- Every column carries a **privacy mark**: `open`, `pseudonymous`, or `hidden`.
-- A linking step names its two columns, its **match kind**, and a free-text nuance note.
-- A step that uses AI matching names its **audit**: `deep`, `wide`, `by_hand`, or `off`.
-- Every step has a status, `proposed` or `confirmed`, and records who created it: the user or the AI.
+A Plan is a JSON document validated by one Zod schema.
+It describes the output file, not a sequence of operations.
+
+| Part           | Holds                                                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datasets       | Name, columns, types, profiles, and which columns are confidential.                                                                                           |
+| Matches        | Each links a column on one dataset to a column on another, with a number, a colour, a match kind, a nuance note, and what to do with rows that find no match. |
+| Output columns | An ordered list. Each is a source column, a formula, or the result of an AI step, and records which match it came through.                                    |
+| Output rows    | The main dataset, what one row is, which rows are kept, the order, and any sample.                                                                            |
+| Analysis       | Optional tables, models, and charts made from the output.                                                                                                     |
+| Run choices    | The audit, the models, and which columns each AI step may send.                                                                                               |
+
+- Every part has a status, `proposed` or `confirmed`, and records who created it: the user or the AI.
 - The Plan is language-neutral.
-  It says what to do, never how in a particular language.
+  It says what the file is, never how to build it in a particular language.
+- One project has exactly one Plan and one output.
 
-Because the canvas is only a view of the Plan, no AI is needed to read the canvas.
-Drawing an arrow writes a step.
-The chat changes the Plan by calling tools such as `add_step`, `update_step`, and `ask_user`, and its changes arrive as proposed steps drawn with dashed lines.
+### How the canvas shows it
+
+- A **match** is a line between two cards, always drawn, in its own colour with its number.
+- An **output column** is a row in the fixed output area, wearing the number and colour of the match it came through.
+  Its line back to the source column is drawn while that column is hovered, focused, or selected.
+- A formula or AI column starts in the output area and has no line.
+- A `proposed` part is drawn dashed, with accept and reject.
+- The output area cannot be moved.
+  It sits at the edge the canvas leads into and is always in view.
+
+Because the canvas is only a view of the Plan, no AI is needed to read it.
+Drawing a line writes a match or an output column.
+The chat changes the Plan by calling tools such as `add_match`, `add_output_column`, `set_rows`, and `ask_user`, and its changes arrive as proposed parts.
+
+## Templates
+
+A template is a tested piece of the runtime that does one job.
+Compiling a Plan means choosing templates and filling in their settings.
+No AI takes part in compiling.
+
+| Family    | Templates                                                                                                                                             |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Read      | Read a file or a sheet, with the header row, rows to skip, and column types as settings.                                                              |
+| Clean     | Trim and case, pad with zeros, strip punctuation or legal suffixes, parse a date, take a year, split one cell into several rows.                      |
+| Match     | Exact, normalized ID with a collision check, name match, time-aware.                                                                                  |
+| Enrich    | Bring columns across a match. Classify each row into fixed categories with AI. Extract a field with AI.                                               |
+| Rows      | Keep rows where a rule holds, keep rows found in another dataset, top N, seeded sample, remove duplicates.                                            |
+| Reshape   | One row per value of a multi-value cell, collapse back, wide to long and back, one row per year between two dates, stack files with the same columns. |
+| Summarize | Group and count, sum, average, or count distinct. Counts by category spread across columns.                                                           |
+| Analyze   | Coverage and summary tables, cross tabulations, regressions with fixed effects and clustered errors, windows before and after a date, charts.         |
+| Write     | CSV, XLSX, `.dta`, and the run record.                                                                                                                |
+
+### What an AI may set
+
+- **Settings.**
+  Each template declares its settings and their allowed values, and anything outside them is refused.
+- **Formulas.**
+  A computed column is a formula in a small expression language: arithmetic, comparisons, `if`, text and date functions, and references to columns.
+  A formula is parsed into a syntax tree and evaluated by the runtime.
+  It is never executed as code, and it cannot open a file, reach the network, or loop.
+- **Prompts.**
+  An AI matching or classifying template has a fixed prompt with marked places for the user's nuance note and for instructions the planning model writes.
+  The prompt text is part of the Plan, shown to the user, and part of the cache key.
+
+### When no template fits
+
+- The chat says what it cannot do and why, and proposes the nearest thing it can.
+- The request is recorded, with the Plan around it, as a template request.
+- New templates ship in a release of the runtime, with tests.
+  Nothing is ever patched in at run time.
+
+### Determinism
+
+- The same Plan and the same runtime version always compile to the same script, byte for byte.
+- A deterministic step always gives the same output for the same input.
+- An AI step gives the same output on a second run because its answers are cached.
+  The cache key covers the model, the prompt text, the template version, and the row.
 
 ## Where AI is used, and where it is not
 
-| Job                                                         | How it is done                                                     |
-| ----------------------------------------------------------- | ------------------------------------------------------------------ |
-| Turn the canvas into a Plan                                 | No AI. The canvas is the Plan.                                     |
-| Tag column roles, suggest a match kind as an arrow is drawn | Small fast model, one short structured call.                       |
-| Understand a typed request and propose steps                | Large model with tool calls that edit the Plan.                    |
-| Compile a built-in step into code                           | No AI. A template that calls the tested runtime.                   |
-| Write a `custom` step or an unusual analysis                | Large model, constrained to the runtime's functions, then checked. |
-| Match rows at run time, for example names                   | The user's chosen provider and key, called from the CLI.           |
-| Judge a sample of matches in an accuracy audit              | A second model, different from the matcher, called from the CLI.   |
-| Draw the audit sample and score it                          | No AI. Seeded sampling and arithmetic.                             |
-| Estimate time and cost                                      | No AI. Counted locally by the CLI.                                 |
-| Choose the run-time model                                   | No AI. A rule over the model registry.                             |
+| Job                                                  | How it is done                                                       |
+| ---------------------------------------------------- | -------------------------------------------------------------------- |
+| Turn the canvas into a Plan                          | No AI. The canvas is the Plan.                                       |
+| Tag column roles, suggest a match as a line is drawn | Small fast model, one short structured call.                         |
+| Understand a typed request and propose Plan parts    | Large model with tool calls that edit the Plan.                      |
+| Write a formula or a prompt                          | Large model. The user reads it before confirming.                    |
+| Compile the Plan into a script                       | No AI. Templates and settings.                                       |
+| Match or classify rows at run time                   | A model from a provider the user has a key for, called from the CLI. |
+| Judge a sample of matches in an accuracy audit       | A second model, different from the matcher, called from the CLI.     |
+| Draw the audit sample and score it                   | No AI. Seeded sampling and arithmetic.                               |
+| Estimate time and cost                               | No AI. Counted locally by the CLI.                                   |
+| Choose the run-time model                            | No AI. A rule over the model registry, which the user can override.  |
 
 Model names are configuration, not code.
-The defaults are the current small Claude model for suggestions and the current large Claude model for planning and custom code.
+The planning models in the first two AI rows are paid for with the user's own Anthropic key until credits exist.
 
 ### Model registry
 
-The registry is one versioned file that lists each run-time model Crosswalk supports, with its provider, price per token, typical speed, and which match kinds it has been tested on.
+The registry is one versioned file that lists each run-time model Crosswalk supports, with its provider, price per token, typical speed, and which templates it has been tested on.
 Each model is also tagged `strong` or `fast`, which is what the deep and wide audits choose from.
-The chooser picks the cheapest model that has passed the recipe's test set for that match kind, and the user can override it.
+The chooser picks the cheapest model that has passed the template's test set, among the providers the user has keys for.
 Prices are updated from the providers' published pricing, never guessed.
-
-Providers supported first: Anthropic, OpenAI, and TypeSafe.
 
 ## The CLI
 
-### Install and link
+### One command
 
 - One installer command sets up `uv` and installs the `crosswalk` command.
-- `uv` downloads its own Python, so the user needs neither Python nor an editor.
-- `crosswalk login` uses the device authorization flow: the CLI shows a short code, the user confirms it in the browser, and the CLI stores a token in the operating system's keychain.
-- `crosswalk link` ties the current folder to one project, and remembers the choice in a small file in that folder.
-- `crosswalk` on its own scans the folder and sends the schema cards to the linked project, where they appear on the open canvas without a refresh.
-- `crosswalk --show` prints exactly what would be sent and sends nothing.
-- Files and folders that are links are skipped unless `--follow-links` is given, so a link into a protected data folder is never read by accident.
-- Hidden folders and the tool folders `node_modules`, `__pycache__`, `site-packages`, and `crosswalk_out` are never read.
-- Nothing is skipped silently: the summary names every skipped folder and counts the skipped links.
-- A table the server would refuse, for example one with more than 5,000 columns, is skipped and named, and the rest is still sent.
-  The cards are sent in as many requests as the server's limits need.
-- Profiles are computed from the first 100,000 rows of a file, and the row count is always the real one.
-- The server address is a setting, and in v1 it is `localhost`.
+  `uv` downloads its own Python, so the user needs neither Python nor an editor.
+- The user opens a terminal in the folder with their files and runs `crosswalk`.
+  Nothing else is ever typed in the terminal, and the command never asks a question there.
+- If the computer is not linked yet, the command opens the browser on a page that links it.
+  The token is stored in the operating system's keychain.
+- The command then opens the browser on the folder's approval page and stays running.
+- Stopping the command, or closing the terminal, disconnects the folder.
+  The canvas shows whether a folder is connected.
 
-### What it reads
+### Approving what is sent
 
-Running `crosswalk` in a folder finds the supported files and builds a **schema card** for each one.
+The approval page lists every dataset the command found, with its row count and every column name, and has one button to send them.
 
-| What is sent        | Contents                                                                   | Which columns                                           |
-| ------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Headers and profile | Column names, inferred type, null rate, uniqueness, value shape, row count | All                                                     |
-| Sample rows         | The first few rows, to show the AI what the values look like               | Open as values, pseudonymous as tokens, hidden left out |
+- Nothing is sent before the user presses it.
+- The page is where the user picks or creates the project, and marks a dataset confidential.
+- Anything in the folder that was not read is listed with the reason: a file type Crosswalk does not read, a file or folder that is a link, a file that could not be opened.
+- The command looks inside subfolders.
+- The choice is remembered for the folder, so the next start goes straight to the canvas and only new or changed files need approving.
+
+### Header check
+
+Every reader treats the first row of a file as its column names, and column names are sent.
+A file whose first row is really data would leak cell values that way.
+
+- The command checks each file's first row before offering it.
+  Names that look like values, such as numbers, dates, or names with the same shape as the rows beneath them, mark the file as suspect.
+- A suspect file is held back and shown on the approval page with the reason.
+  The user can say which row holds the headers, or that the file has none, in which case its columns are named by position.
+
+### What is sent to the server
+
+| What            | Contents                                                                 |
+| --------------- | ------------------------------------------------------------------------ |
+| Schema cards    | File names, sheet names, row counts, and column names.                   |
+| Column profiles | Inferred type, null rate, uniqueness, and value shape.                   |
+| Run status      | Step reached, row counts, match rates, time, cost, and the audit result. |
 
 Value shape describes form, not content, for example "six digits", "date as MM-DD-YYYY", or "several lines per cell".
-The CLI prints exactly what it is about to send and waits for the user to accept.
+A profile is computed from the first 100,000 rows of a file, and the row count is always the real one.
+No cell value is ever sent to the server.
 
-### Privacy marks and pseudonyms
+### Confidential data and AI steps
 
-- When a dataset is first scanned, the CLI asks once whether its values may be shared.
-  Yes marks every column `open`, and no marks every column `hidden`.
-- The CLI suggests `pseudonymous` for columns that look like identifiers and `hidden` for columns that look personal, and the user confirms on the canvas.
-- A pseudonym is a keyed hash of the cleaned value, prefixed with the column's kind.
-  The same value gets the same token in every dataset in the project, so exact joins on tokens work.
-- The key and the token-to-value map are stored on the user's machine and never sent.
-- Tokens are turned back into values only inside the CLI, when it writes the output file.
-- The marks are enforced in one place, the CLI's outbound gate, which every message to the server and every AI call passes through.
-- A pseudonymous column can be joined exactly, counted, and grouped.
-  It cannot be name-matched, because an AI cannot compare tokens.
-  A step that needs real values from a column that is not `open` is refused at confirm time, with an explanation.
+Cell values leave the machine only for an AI step, and only to the AI provider.
+
+- Before a run, the estimate screen lists each AI step with exactly the columns it would send, and the run cannot start until the user agrees to each.
+- A column marked `confidential` is refused by the CLI's outbound gate, whatever the Plan says.
+- A dataset marked confidential when it is added has every column marked.
+- A column can be sent as tokens: a keyed hash of the cleaned value.
+  The same value gets the same token everywhere in the project.
+  The key and the token-to-value map stay on the user's machine.
+- A step that compares names needs real values, so it cannot use a confidential or tokenized column.
+  The Plan is refused at confirm time with an explanation.
+- The outbound gate is the one place these rules are enforced, and every AI call passes through it.
 
 This is the same idea as the pointer tokens in `src/lex_machina_vault`, made general.
 
-### Running a script
+### Running a Plan
 
-1. The server sends the confirmed script and its Plan.
-2. The CLI runs a policy check on the script.
-   Scripts are thin glue over the runtime, so the check is an allowlist: only the runtime and a short list of libraries may be imported, with no shell access and no network access outside the runtime's AI client.
-3. The CLI runs the script on synthetic data built from the profiles, to catch crashes before touching real data.
-4. The CLI does a dry run on the real data: it runs every deterministic step, counts the rows that still need AI, and prints the estimated time and cost, with the audit's cost included.
-5. The user accepts, and enters an API key if one is needed.
-   The key is stored in the keychain and never sent to Crosswalk.
-6. The script runs with `uv run`, with its dependencies pinned in the script header.
-7. Outputs go to a new `crosswalk_out/<run>/` folder.
-   Inputs are opened read-only.
-8. If the run used AI matching, the accuracy audit starts on its own and its report is saved with the output and shown in the web app.
+1. The user confirms the Plan and presses Run on the canvas.
+2. The server sends the Plan to the folder's running command.
+3. The command compiles the Plan into a script with its templates.
+4. The command runs the script on synthetic data built from the profiles, to catch crashes before touching real data.
+5. The command does a dry run on the real data: it runs every deterministic step, counts the rows that still need AI, and reports the estimated time and cost for the run and for each audit option.
+6. The estimate screen shows that, the columns each AI step would send, and the audit choices.
+   The user agrees.
+7. The command runs the script.
+   Outputs go to a new `crosswalk_out/<run>/` folder, and inputs are opened read-only.
+8. The chosen audit runs, and the result is shown in the output area and saved with the output.
 
-Every script is saved next to its output and can be run again later with `crosswalk run <script>`, with no web session.
+The script is saved next to its output, so anyone can read what was done.
+It is thin: it imports the runtime and calls templates with the Plan's settings.
 
 ## The runtime
 
 The runtime is a versioned Python library that ships with the CLI.
-It holds the recipes, and it is where the accumulated judgment lives.
+It holds the templates, and it is where the accumulated judgment lives.
 
 - **Readers** for each file format, which keep identifiers as text so leading zeros survive.
-- **Match recipes**, one per match kind: exact, normalized ID with a collision check, name match, and time-aware.
+- **Templates**, as listed above, each with its own test set built from synthetic data.
+- **Formula evaluator** for computed columns.
 - **Cell tools** for columns that hold several values per cell, which keep every derived column aligned.
 - **AI client** with retries, bounded concurrency, results consumed in order, and a versioned cache that is saved in checkpoints so an interrupted run resumes without paying twice.
-- **Pseudonymizer** and the outbound gate that enforces the privacy marks.
+- **Outbound gate** that enforces confidential and tokenized columns.
 - **Auditor**, described below.
-- **Manifest**: input hashes, the Plan, recipe versions, model, token counts, cost, row counts at every step, and the audit result.
-- **Analysis helpers** for summary tables, panels, regressions, and charts.
+- **Run record**: input hashes, the Plan, template versions, models, token counts, cost, row counts at every step, and the audit result.
 
-Each recipe has its own test set built from synthetic data.
-A change to a recipe or a prompt bumps its version, which invalidates the matching cache entries.
+A change to a template or a prompt bumps its version, which invalidates the matching cache entries.
 
 ### Match decisions
 
-A match recipe gives every row one of two answers, `match` or `no_match`.
+A match template gives every row one of two answers, `match` or `no_match`.
 There is no uncertain answer, no threshold that withholds a match, and no approval step.
 Each decision records its source (exact rule or AI), the model, and the AI's confidence, as columns in the output.
 
@@ -214,60 +304,63 @@ Each decision records its source (exact rule or AI), the model, and the AI's con
 
 The auditor is modeled on how accuracy was checked by hand in this repo: `scripts/evaluation/sample_final_audit.py` draws the sample and `scripts/evaluation/score_company_group_holdout.py` scores it.
 
-| Audit     | Sample size                   | Judge                        |
-| --------- | ----------------------------- | ---------------------------- |
-| `deep`    | 10% of matches, at most 100   | A `strong` model             |
-| `wide`    | 20% of matches, at most 1,000 | A `fast` model               |
-| `by_hand` | Chosen by the user            | The user, in a verdict sheet |
-| `off`     | None                          | None                         |
+| Audit     | Sample size                     | Judge                        |
+| --------- | ------------------------------- | ---------------------------- |
+| `deep`    | 10% of matches, at most 100     | A `strong` model             |
+| `wide`    | 20% of matches, at most 1,000   | A `fast` model               |
+| `custom`  | A share and a cap the user sets | A model the user picks       |
+| `by_hand` | Chosen by the user              | The user, in a verdict sheet |
+| `none`    | None                            | None                         |
+
+There is no default.
+The user chooses on the estimate screen, where each option shows its sample size and cost.
 
 - **Sampling.**
   Seeded, without replacement, over unique keys rather than rows, so a name that appears a thousand times is judged once.
   The sample is split across three groups: matches chosen by AI, matches made by exact rules, and rows left unmatched.
-  The seed and the sampled keys are written to the manifest.
+  The seed and the sampled keys are written to the run record.
 - **Judging.**
-  The judge is a different model from the matcher when the registry has one.
+  The judge is a different model from the matcher when the user's providers allow it.
   It sees the row, the chosen match, and the candidate list, and answers `correct` or `incorrect`.
   For an unmatched row it answers whether any candidate should have been chosen.
-  The judge is forced to answer, and a by-hand reviewer may also answer `uncertain`, which is left out of the score and counted separately.
+  A by-hand reviewer may also answer `uncertain`, which is left out of the score and counted separately.
 - **Scoring.**
-  Match precision, the missed-match rate among unmatched rows, overall accuracy, each with its sample size, and the same numbers per group.
+  Accuracy, match precision, and the missed-match rate among unmatched rows, each with its sample size, and the same numbers per group.
   Every disagreement is listed with both answers.
-- **Honest labels.**
-  A `deep` or `wide` result is reported as AI-judged agreement.
-  Only a `by_hand` result is reported as measured accuracy.
+- **Naming.**
+  The result is called accuracy.
+  The report states which audit produced it, the sample size, and the judge.
 - **No feedback.**
-  The auditor never changes the output it audited, and its sample is never used to tune a prompt or a recipe.
+  The auditor never changes the output it audited, and its sample is never used to tune a prompt or a template.
 - **By hand.**
-  `crosswalk audit` writes a verdict sheet, and `crosswalk score` reads it back and produces the same report.
+  The verdict sheet is a file in the output folder that the user fills in, and the score appears once it is complete.
 
 ## Script languages
 
 The Plan is language-neutral, so one Plan can compile to more than one target.
 
-| Target                 | Status | Notes                                                                         |
-| ---------------------- | ------ | ----------------------------------------------------------------------------- |
-| Python                 | v1     | The default. The CLI provides the runtime.                                    |
-| Stata `.do` for models | Later  | Stata is licensed, so the CLI detects a local install and cannot bundle one.  |
-| R                      | Later  | The CLI provisions R, and each recipe needs an R version with the same tests. |
+| Target                 | Status | Notes                                                                           |
+| ---------------------- | ------ | ------------------------------------------------------------------------------- |
+| Python                 | First  | The default. The CLI provides the runtime.                                      |
+| Stata `.do` for models | Later  | Stata is licensed, so the CLI detects a local install and cannot bundle one.    |
+| R                      | Later  | The CLI provisions R, and each template needs an R version with the same tests. |
 
 The target is inferred from the conversation and the user's profile.
 A user who never mentions a language gets Python and is not asked.
-A target is only offered once every recipe a Plan needs exists and is tested for it.
+A target is only offered once every template a Plan needs exists and is tested for it.
 
 ## Repo layout
 
 ```
 projects/Crosswalk/
   apps/
-    web/               # Next.js canvas and chat, static export
-    api/               # Hono server: plans, AI planning, compiler, CLI link
+    web/               # Next.js canvas, chat, and output area, static export
+    api/               # Hono server: accounts, projects, plans, AI planning, CLI link
   packages/
     contract/          # dataset card types and card geometry, shared by web and api
     plan/              # Zod schema for the Plan, shared by web and api
-    compiler/          # Plan to script, one module per target
-  cli/                 # Python CLI: login, scan, profile, run
-  runtime/             # Python runtime library: recipes, AI client, manifest
+  cli/                 # Python CLI: link, scan, profile, compile, run
+  runtime/             # Python runtime library: templates, formulas, AI client, auditor
   registry/            # model registry
   spec/                # this constitution
 ```
@@ -278,7 +371,7 @@ The Lex Machina project's rules still apply to it: Crosswalk's code and tests ne
 
 ## Hosting
 
-- v1 is not hosted.
+- Crosswalk is not hosted yet.
   `pnpm start` builds the web app and serves it with the API and the embedded database at `localhost:8787`.
   `pnpm dev` does the same with live reload, with the web app on port 3210 forwarding `/api` to the server.
 - One Hono process serves both the API and the static web build, so there is one origin and no CORS.
@@ -287,32 +380,32 @@ The Lex Machina project's rules still apply to it: Crosswalk's code and tests ne
 
 ## Security and privacy
 
-- Data may leave the machine when no license or privacy rule forbids it, and the privacy marks are the user's statement of what is allowed.
-- `hidden` values never leave the machine.
-  `pseudonymous` values leave only as tokens.
-  Both rules are enforced by the CLI's outbound gate and covered by tests that try to break them.
-- The pseudonym key, the token map, and run-time AI keys stay on the user's machine.
-- The server stores schema cards, Plans, scripts, sample rows as marked, run summaries, and audit reports.
-- Rows sent to an AI provider at run time go straight from the CLI to that provider, under the user's own key and terms.
-- The CLI shows what it will send before sending it, and what a script will do before running it.
-- Generated scripts are treated as untrusted until they pass the policy check.
-- Whether a dataset's license allows sharing is the user's call.
-  Crosswalk asks the question and records the answer, and does not guess.
+- The user's files never leave their machine.
+- The server stores accounts, projects, schema cards, profiles, Plans, run summaries, audit results, and encrypted AI keys.
+  It never stores or receives a cell value.
+- Cell values go only to an AI provider, only for an AI step, only for the columns the user agreed to, and directly from the user's machine.
+- An AI key is given only to a CLI linked to the same account, for one run, and is held in memory.
+- The approval page shows what will be sent before it is sent, and the estimate screen shows what a run will do before it runs.
+- A script is compiled on the user's machine from templates that shipped with the CLI.
+  No code arrives from the server, so there is nothing generated to distrust.
+- Whether a dataset's license allows sending values to an AI provider is the user's call.
+  Crosswalk shows the columns and asks, and does not guess.
 
 ## CI/CD
 
-- Every pull request runs Biome, Ruff, type checks, Vitest, pytest, a build, Playwright, and one full CLI run against synthetic data.
+- Every pull request runs Biome, Ruff, type checks, Vitest, pytest, a build, and the Playwright suite with the real CLI.
 - Deploying on merge is added in the deployment phase.
 - A tagged release publishes the CLI and the runtime.
 
 ## Quality bars
 
 - **Same answer as by hand.**
-  For each recipe, a reference task done by hand must produce the same output through Crosswalk.
+  For each template, a reference task done by hand must produce the same output through Crosswalk.
+- **Deterministic:** compiling the same Plan twice gives the same script, and a test checks it for every example Plan.
 - **Estimates:** the cost shown before a run is within 15% of the actual cost.
 - **Resumable:** stopping a run at any point and starting it again loses no paid answers.
-- **Audits agree with people:** on the recipe test sets, the AI-judged score is within 5 points of the by-hand score, or the judge model is not offered for that match kind.
-- **Marks hold:** no test can make a `hidden` value or an untokenized `pseudonymous` value appear in anything the CLI sends.
+- **Audits agree with people:** on the template test sets, an AI-judged accuracy is within 5 points of the by-hand accuracy, or that judge model is not offered for that template.
+- **Nothing leaks:** no test can make a cell value appear in anything sent to the server, or a confidential value appear in anything sent to a provider.
 - **Aligned:** every derived column on a multi-value cell has the same number of slots as its source, checked on every run.
-- **Accessible:** WCAG 2.2 AA, and every canvas action is also possible from the keyboard and from the chat.
+- **Accessible:** WCAG 2.2 AA, and everything that can be done by drawing can also be done from the keyboard and from the chat.
 - **Zero tolerance:** no lint warnings, and no failing or flaky tests on `main`.

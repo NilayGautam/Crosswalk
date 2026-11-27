@@ -1,33 +1,23 @@
 # Roadmap
 
-## v1: the walking skeleton
+Every phase ends with a **replace-me check**: a task I have already done by hand, redone through Crosswalk.
+
+## v1: the walking skeleton (built)
 
 v1 is Phases 0 to 3.
-It runs on my laptop only.
-It produces no output file yet.
-It proves the plumbing that everything else rides on: accounts, the link between the terminal and the browser, and a canvas that shows real datasets.
+It runs on my laptop only and produces no output file.
+It proved the plumbing: accounts, the link between the terminal and the browser, and a canvas that shows real datasets.
 
-v1 is done when this works from a clean start, with no help:
-
-1. I sign up and log in.
-2. I create a project.
-3. I install the CLI, log it in with a short code, and link a folder to the project.
-4. I run `crosswalk` in that folder, and a card for each dataset appears on the open canvas without a refresh.
-5. I drag the cards around, reload the page, and they are where I left them.
-
-Out of v1: arrows, chat, privacy marks, scripts, AI matching, audits, and deployment.
-Nothing but column names and profiles leaves the machine in v1, so the privacy marks can wait.
-
-## Phase 0: Foundations
+### Phase 0: Foundations
 
 - [x] Check that the `crosswalk` name is free for the CLI package and the command.
       It is taken on PyPI, so the package is `crosswalk-cli` and the command stays `crosswalk`.
 - [x] Create the repository at `projects/Crosswalk/` with pnpm workspaces, uv, Biome, Ruff, and strict TypeScript.
-- [x] `pnpm dev` starts the server, the web app, and the embedded database with one command.
+- [x] `pnpm start` runs the server, the web app, and the embedded database with one command.
 - [x] Add a CI workflow for lint, type checks, tests, and build.
-- [x] Design tokens: palette, type scale, spacing, and borders.
+- [x] Design tokens: palette, type scale, spacing, and borders, recorded in `apps/web/DESIGN.md`.
 
-## Phase 1: Accounts and projects
+### Phase 1: Accounts and projects
 
 - [x] Database schema and migrations with Drizzle on PGlite.
 - [x] Sign up, log in, and log out with email and password.
@@ -36,151 +26,164 @@ Nothing but column names and profiles leaves the machine in v1, so the privacy m
 - [x] One account for the same email, whichever way it signs in.
 - [x] Create, rename, open, and delete named projects.
 - [x] A project is only visible to its owner.
-- [x] Playwright tests for sign up, log in, log out, and the project list.
 
-## Phase 2: The CLI link and schemas
+### Phase 2: The CLI link and schemas
 
 - [x] One-line installer that sets up `uv` and the `crosswalk` command, on macOS first: `pnpm install-cli`.
-- [x] `crosswalk login` with the device authorization flow, and the token stored in the keychain.
-- [x] A page in the web app where the user confirms the short code.
-- [x] `crosswalk link` to tie a folder to a project.
-- [x] Folder scan for CSV, TSV, XLSX, XLS, Parquet, and `.dta`.
-- [x] A schema card per dataset: file name, row count, and column names.
-- [x] A full profile per column: inferred type, null rate, uniqueness, and value shape.
-- [x] Profiling that stays fast on large files.
-- [x] The CLI prints what it will send and waits for consent.
-- [x] Running `crosswalk` again updates the cards instead of duplicating them.
-- [x] `crosswalk logout` and a list of linked devices in the web app, with a way to revoke one.
-- [x] pytest tests for every file format, using synthetic files only.
+- [x] Linking a computer with the device authorization flow, and the token stored in the keychain.
+- [x] Folder scan for CSV, TSV, XLSX, XLS, Parquet, and `.dta`, including subfolders.
+- [x] A schema card per dataset, and a full profile per column.
+- [x] Linked devices listed in the web app, with a way to unlink one.
 
-## Phase 3: The canvas
+### Phase 3: The canvas
 
-- [x] A canvas per project, built on React Flow, with pan and zoom.
-- [x] A dataset card that lists its columns with each column's type.
-- [x] The column profile shown on hover or focus.
-- [x] Cards appear live when the CLI sends them.
-- [x] New cards are placed where they do not overlap existing ones.
-- [x] Cards are draggable.
-- [x] Card positions are saved per project and restored on reload.
-- [x] Remove a card from the canvas.
-- [x] An empty canvas explains how to install and link the CLI.
+- [x] A canvas per project with pan and zoom.
+- [x] Dataset cards that arrive live, do not overlap, and show a column's profile.
+- [x] Draggable cards whose positions are saved.
 - [x] Every canvas action also works from the keyboard.
-- [x] One end-to-end test that runs the real CLI against the real server and checks the cards in a real browser.
-- [ ] **v1 gate:** the five steps at the top of this file work from a clean start, done by me by hand with my own files.
-      The automated end-to-end test already does all five.
+- [x] An end-to-end test that runs the real CLI against the real server in a real browser.
+- [ ] **v1 gate:** I do it by hand with my own files, from a clean start.
 
-## Phase 4: The Plan and arrows
+## v2: the first output file
 
-- [ ] The Plan schema in Zod, exported as JSON Schema.
-- [ ] Draw an arrow from one column to another, and pick a step kind and match kind.
-- [ ] A nuance note on every arrow.
-- [ ] A privacy mark on every column: open, pseudonymous, or hidden.
-- [ ] A side panel that shows the Plan in plain language.
-- [ ] **Replace-me check:** I can draw one of my past join tasks and the plain-language Plan reads correctly to my professor.
+v2 is Phases 4 to 7.
+It is done when I can open a folder, run one command, describe a joined file by drawing or by typing, and get that file.
+v2 has no AI matching: every match is exact or a normalized ID.
 
-## Phase 5: Privacy marks in the CLI
+### Phase 4: One terminal action
 
-- [ ] The one question per dataset: may its values be shared?
-- [ ] Suggested privacy marks for columns that look like identifiers or personal data.
-- [ ] The pseudonymizer, with its key and token map kept on the user's machine.
-- [ ] The outbound gate that enforces the marks, with tests that try to leak a hidden value.
-- [ ] Sample rows sent according to the marks.
+- [ ] `crosswalk` becomes one long-running command that never asks a question in the terminal.
+- [ ] It links the computer through the browser when needed, with no separate login command.
+- [ ] The approval page: pick or create the project, see every dataset with every column name, and send.
+- [ ] The header check, with a way to say which row holds the headers.
+- [ ] A "not read" list on the approval page: other file types, links, and files that could not be opened.
+- [ ] The folder's choices are remembered, so a second start goes straight to the canvas.
+- [ ] The canvas shows whether the folder's command is connected.
+- [ ] Remove the `login`, `link`, and `status` commands and the terminal prompt.
+- [ ] **Replace-me check:** my professor gets their own files onto a canvas by typing one word.
 
-## Phase 6: Deterministic scripts
+### Phase 5: The Plan, lines, and the output area
 
-- [ ] Runtime readers that keep identifiers as text.
-- [ ] Recipes for exact match and normalized ID match with a collision check.
-- [ ] Filter, reshape, and aggregate steps, including splitting cells that hold several values.
-- [ ] The compiler: built-in steps to a Python script through templates, with no AI.
-- [ ] Policy check, synthetic-data run, and dry run in the CLI.
-- [ ] Outputs in a new folder with a manifest, and inputs opened read-only.
-- [ ] `crosswalk run <script>` to repeat a run with no web session.
+- [ ] The Plan schema in Zod, exported as JSON Schema, with three example Plans written by hand.
+- [ ] The fixed output area: columns, what one row is, and which rows are kept.
+- [ ] Match lines between cards: numbered, colour coded, with a match kind and a nuance note.
+- [ ] Output columns added from a card, wearing their match's number and colour, with the line drawn on hover, focus, or selection.
+- [ ] Choose the main dataset, and what happens to rows that find no match.
+- [ ] Row rules: keep rows where a rule holds, and keep rows found in another dataset.
+- [ ] The Plan read back in plain language.
+- [ ] Everything that can be drawn can also be done from the keyboard.
+- [ ] **Replace-me check:** I draw one of my past join tasks and my professor reads the plain-language Plan correctly.
+
+### Phase 6: Templates and the first output
+
+- [ ] The runtime library, with readers that keep identifiers as text.
+- [ ] Templates: read, clean, exact match, normalized ID match with a collision check, bring columns across, row rules, remove duplicates, write.
+- [ ] The formula language for computed columns: parser, evaluator, and tests.
+- [ ] The compiler, with a test that the same Plan always gives the same script.
+- [ ] Run from the canvas: the synthetic-data run, the dry run, and the estimate screen.
+- [ ] The output in a new folder with its script and run record, and inputs opened read-only.
+- [ ] Run status and the result shown in the output area: rows, columns, and the match rate of each match.
+- [ ] A clear message when no template fits, and a recorded template request.
 - [ ] **Replace-me check:** an identifier join and a filtered subset that I built by hand come out identical through Crosswalk.
 
-## Phase 7: Chat and suggestions
+### Phase 7: Keys and chat
 
-- [ ] Column role tagging and match kind suggestions from the small model as arrows are drawn.
-- [ ] Chat that edits the Plan through tool calls.
-- [ ] Proposed steps drawn as dashed arrows, with accept and reject.
-- [ ] The chat can ask a question when a request is ambiguous instead of guessing.
+- [ ] AI keys in account settings, one per provider, encrypted at rest.
+- [ ] Chat that edits the Plan through tool calls, using the user's Anthropic key.
+- [ ] Proposed matches and output columns drawn dashed, with accept and reject.
+- [ ] Match suggestions and column role tags from the small model as lines are drawn.
+- [ ] The chat writes formulas, shown to the user before they are accepted.
+- [ ] The chat asks a question when a request is ambiguous instead of guessing.
 - [ ] A whole task done by typing only, with nothing drawn.
-- [ ] **Replace-me check:** my professor types a request the way they would email it to me, and the proposed Plan is right or one correction away.
+- [ ] **v2 gate:** my professor types a request the way they would email it to me, accepts the proposed lines, and gets the right file.
 
-## Phase 8: AI matching and audits
+## v3: AI matching
 
-- [ ] Name match recipe: clean, match exactly, retrieve candidates, AI picks only from candidates.
-- [ ] Time-aware match recipe.
+### Phase 8: Name matching and accuracy
+
+- [ ] Name match template: clean, match exactly, retrieve candidates, AI picks only from candidates.
+- [ ] Time-aware match template.
+- [ ] AI classify and AI extract templates, with their prompts shown and editable through the nuance note.
 - [ ] AI client with retries, bounded concurrency, and a versioned, checkpointed cache.
-- [ ] Model registry and the rule that chooses a model.
-- [ ] Time and cost estimate from the dry run, shown before any paid call, with the audit's cost included.
-- [ ] API key prompt in the CLI, stored in the keychain.
+- [ ] The key handed to the linked CLI for one run and held in memory only.
+- [ ] Model registry, limited to the providers the user has keys for.
+- [ ] Confidential columns and datasets, sending a column as tokens, and the outbound gate, with tests that try to leak a value.
+- [ ] The estimate screen lists the columns each AI step would send and asks for each.
 - [ ] Every row ends as a match or no match, with the source and confidence recorded and nothing withheld.
 - [ ] The auditor: seeded sampling across AI matches, exact matches, and unmatched rows.
-- [ ] Deep audit (10% up to 100, strong model) and wide audit (20% up to 1,000, fast model), started automatically when a run ends.
-- [ ] By-hand audit with `crosswalk audit` and `crosswalk score`.
-- [ ] The audit report in the manifest and in the web app, labeled as AI-judged or measured.
-- [ ] **Replace-me check:** I run a name match on files of my own, read the automatic audit, and then check it with a by-hand audit of the same run.
+- [ ] Audit choices on the estimate screen with their cost: deep, wide, custom, by hand, none.
+- [ ] Accuracy shown in the output area and saved in the run record.
+- [ ] **Replace-me check:** I run a name match on files of my own, read the accuracy, and then check it with a by-hand audit of the same run.
 
-## Phase 9: Analysis
+## v4: the rest of the job
 
-- [ ] Summary tables and coverage reports written to a workbook.
-- [ ] Panel builder, for example one row per company per year from dated events.
-- [ ] Event windows before and after a date.
-- [ ] Regressions and statistics with pyfixest and statsmodels, with a results table.
+### Phase 9: Reshaping and summaries
+
+- [ ] Templates: split a multi-value cell into rows and collapse it back, wide to long and back, one row per year between two dates, stack files.
+- [ ] Templates: group and summarize, counts by category, top N, seeded sample.
+- [ ] "What one row is" in the output area drives these.
+- [ ] **Replace-me check:** a firm-year panel I built by hand comes out identical.
+
+### Phase 10: Analysis
+
+- [ ] Coverage and summary tables written to a workbook.
+- [ ] Regressions with pyfixest and statsmodels, with a results table.
+- [ ] Windows before and after a date.
 - [ ] Charts with matplotlib.
 - [ ] Export to `.dta` so work can continue in Stata.
-- [ ] `custom` steps written by the large model, constrained to the runtime and checked.
 - [ ] **Replace-me check, and the goal:** my professor completes a real request end to end without contacting me.
 
-## Phase 10: Deployment and the research group
+## v5: other people
+
+### Phase 11: Deployment and the research group
 
 - [ ] Choose a host that scales to zero and a hosted Postgres.
 - [ ] Deploy on merge to `main`.
+- [ ] Email verification and password reset.
 - [ ] Shared projects.
-- [ ] Saved recipes: a confirmed Plan fragment that can be reused on new datasets.
+- [ ] Saved plans that can be reused on new datasets.
 - [ ] Windows and Linux installers.
 - [ ] A short guide written for someone who has never used a terminal.
 
-## Phase 11: Public product
+### Phase 12: Paid product
 
-- [ ] Public sign-up, with email verification and password reset.
-- [ ] Crosswalk credits, so a user without their own AI key can still run AI steps.
+- [ ] Public sign-up.
+- [ ] Credits, so a user never needs an AI key.
 - [ ] Billing and usage limits.
 - [ ] Stata `.do` target for models.
 - [ ] R target.
-- [ ] Target inference from the conversation, with Python as the silent default.
-- [ ] A privacy page that states exactly what leaves the user's machine under each mark.
+- [ ] A privacy page that states exactly what leaves the user's machine.
 
 ## Later
 
-- A desktop app that wraps the CLI for users who will not open a terminal.
+- A desktop app that starts the command for users who will not open a terminal.
 - More audit options, such as two judges that must agree.
-- Running scripts on Crosswalk's servers for datasets whose columns are all open.
-- A public library of recipes for common datasets.
-- Scheduled re-runs when a source dataset is updated.
+- A public library of plans for common datasets.
+- Re-running a plan when a source file changes.
 
 ## Open decisions
 
 These are my recommendations.
 Each one is written into the spec as if decided, and should be confirmed or changed before the phase it belongs to.
 
-1. **Linking Google to an email account.**
-   An account made with email and password is not verified in v1, because no email is sent.
-   Google sign-in with the same address joins that account.
-   Before public sign-up, email accounts must be verified first, or someone could sign up with another person's address and wait for them to arrive through Google.
-2. **PGlite on the laptop.**
-   This laptop has no Docker and no Postgres, and PGlite needs neither.
-   It allows one server process at a time, which is fine for v1.
-3. **No email is sent in v1.**
-   Email verification and password reset need an email service, so they wait for Phase 11.
-   On a laptop a forgotten password is reset from the command line.
-4. **The default audit is deep.**
-   10% of matches up to 100, judged by a strong model, unless the user picks another.
-5. **An AI-judged audit is not called accuracy.**
-   It is reported as AI-judged agreement, and only a by-hand audit is called measured accuracy.
-6. **A pseudonymous column cannot be name-matched.**
-   AI matching needs real values, so those columns must be marked open.
-7. **Python is the only script language until Phase 11.**
-   Stata and R are separate targets, because each needs its own tested recipes.
-8. **Crosswalk credits route open values through our servers.**
-   Hidden and pseudonymous columns stay protected by the marks, but credits still need their own privacy terms before Phase 11.
+1. **The AI key is handed to the user's CLI for a run.**
+   You asked for keys on the account.
+   I chose to send the key to the linked CLI rather than route every AI call through the server, so cell values never pass through Crosswalk.
+   The cost is that a key leaves the server, to a machine the same user already linked.
+2. **Chat uses the user's own Anthropic key.**
+   Until credits exist, a user with no Anthropic key can draw but cannot chat.
+3. **The formula language is small on purpose.**
+   Arithmetic, comparisons, `if`, text and date functions.
+   Anything it cannot express becomes a template request, not a bigger language.
+4. **Template requests are only recorded.**
+   Nothing reviews them automatically; I read them and decide what to build.
+5. **The old commands are removed.**
+   `login`, `link`, and `status` go away in Phase 4, since one command does everything.
+6. **Linking Google to an email account.**
+   An account made with email and password is not verified yet, because no email is sent.
+   Before public sign-up, email accounts must be verified, or someone could sign up with another person's address and wait for them to arrive through Google.
+7. **PGlite on the laptop.**
+   It allows one server process at a time, which is fine until deployment.
+8. **Python is the only script language until Phase 12.**
+9. **Credits route values through our server.**
+   That is the one case where values pass through Crosswalk, and it needs its own privacy terms first.
