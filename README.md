@@ -33,8 +33,9 @@ pnpm install-cli
 2. In a terminal, run `crosswalk login` and confirm the code in the browser.
 3. Open a terminal in a folder that holds datasets and run `crosswalk`.
    It lists what it found and every column name it will send, and asks before sending.
-   A file whose first row looks like data rather than column names is held back, because column names are sent.
-   Add a header row to that file and run `crosswalk` again.
+   A file, or a single workbook sheet, whose first row looks like data rather than column names is held back, because column names are sent.
+   The other sheets of that workbook are still sent.
+   Add a header row to what was held back and run `crosswalk` again.
 4. The cards appear on the open canvas.
    Drag them where you want them.
 
@@ -81,14 +82,14 @@ After changing the database schema in `apps/api/src/db/schema.ts`, run `pnpm --f
 
 All settings are environment variables, and none are required.
 
-| Variable               | Default                  | Purpose                                             |
-| ---------------------- | ------------------------ | --------------------------------------------------- |
-| `CROSSWALK_PORT`       | `8787`                   | Port of the server.                                 |
-| `CROSSWALK_DATA_DIR`   | `apps/api/.data`         | Where the database and the signing secret are kept. |
-| `CROSSWALK_PUBLIC_URL` | The server's own address | The address people open in a browser.               |
-| `GOOGLE_CLIENT_ID`     | Not set                  | Turns on Google sign-in, with the secret below.     |
-| `GOOGLE_CLIENT_SECRET` | Not set                  | The Google OAuth client secret.                     |
-| `CROSSWALK_SERVER`     | `http://localhost:8787`  | The server the command line tool talks to.          |
+| Variable               | Default                  | Purpose                                                             |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------- |
+| `CROSSWALK_PORT`       | `8787`                   | Port of the server.                                                 |
+| `CROSSWALK_DATA_DIR`   | `apps/api/.data`         | Where the database and the signing secret are kept.                 |
+| `CROSSWALK_PUBLIC_URL` | The server's own address | The address people open in a browser.                               |
+| `GOOGLE_CLIENT_ID`     | Not set                  | Turns on Google sign-in, with the secret below.                     |
+| `GOOGLE_CLIENT_SECRET` | Not set                  | The Google OAuth client secret.                                     |
+| `CROSSWALK_SERVER`     | `http://localhost:8787`  | The server the command line tool talks to. `--server` overrides it. |
 
 For Google sign-in, create an OAuth client in Google Cloud with the redirect address `<public URL>/api/auth/callback/google`.
 
